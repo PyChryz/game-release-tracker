@@ -1,6 +1,6 @@
 // Globale Variablen für den Zustand der Seite
 let gameOffset = 0;
-const gamesPerLoad = 30; // Wie von dir gewünscht
+const gamesPerLoad = 20; 
 let currentView = 'upcoming'; // Mögliche Werte: 'upcoming' oder 'search'
 let currentSearchQuery = '';
 let debounceTimer;
@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// Funktion, um kommende Spiele zu holen (ruft unsere Netlify Function auf)
+// Funktion, um kommende Spiele zu holen
 function fetchUpcomingGames(offset) {
     const apiUrl = '/api/igdb';
     const currentTimestamp = Math.floor(Date.now() / 1000);
@@ -90,7 +90,7 @@ function fetchUpcomingGames(offset) {
         });
 }
 
-// Funktion, um Suchergebnisse zu holen (ruft unsere Netlify Function auf)
+// Funktion, um Suchergebnisse zu holen 
 function fetchSearchResults(query, offset) {
     const apiUrl = '/api/igdb';
     const gamesContainer = document.getElementById('games-container');
