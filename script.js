@@ -1,28 +1,93 @@
-// Globale Variablen für den Zustand der Seite
+// Globale Variablen
 let gameOffset = 0;
 const gamesPerLoad = 20;
-let currentView = 'upcoming'; // Mögliche Werte: 'upcoming' oder 'search'
+let currentView = 'upcoming';
 let currentSearchQuery = '';
 let debounceTimer;
 
-// Hauptfunktion, die nach dem Laden der Seite ausgeführt wird
-document.addEventListener('DOMContentLoaded', () => {
-    // Referenzen zu den HTML-Elementen
-    const loadMoreButton = document.getElementById('load-more-btn');
-    const searchInput = document.getElementById('search-input');
-    const gamesContainer = document.getElementById('games-container');
-    const mainTitle = document.getElementById('main-title');
-    const searchForm = document.getElementById('search-form');
+// --- DOM-Elemente einmalig holen ---
+const loadMoreButton = document.getElementById('load-more-btn');
+const searchInput = document.getElementById('search-input');
+const gamesContainer = document.getElementById('games-container');
+const mainTitle = document.getElementById('main-title');
+const searchForm = document.getElementById('search-form');
 
-    // Verhindert das Neuladen der Seite bei Enter-Druck im Suchfeld
-    searchForm.addEventListener('submit', (event) => {
-        event.preventDefault();
+// --- HILFSFUNKTIONEN ---
+
+// Setzt die Ansicht auf die Startseite zurück
+function resetToUpcomingView() {
+    searchInput.value = '';
+    gamesContainer.innerHTML = '';
+    gameOffset = 0;
+    currentView = 'upcoming';
+    loadMoreButton.style.display = 'inline-block';
+    fetchUpcomingGames(gameOffset);
+}
+
+// Allgemeine Funktion zum Abrufen von Spieldaten
+function fetchGames(body, isSearch = false, query = '') {
+    const apiUrl = '/api/igdb';
+
+    fetch(apiUrl, { method: 'POST', body: body })
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP-Fehler! Status: ${response.status}`);
+            return response.json();
+        })
+        .then(games => {
+            if (isSearch && games.length === 0 && gameOffset === 0) {
+                gamesContainer.innerHTML = `<p class="info-text">Keine kommenden Spiele für "${query}" gefunden.</p>`;
+                loadMoreButton.style.display = 'none';
+                return;
+            }
+            displayGames(games);
+            if (games.length < gamesPerLoad) {
+                loadMoreButton.style.display = 'none';
+            } else {
+                loadMoreButton.style.display = 'inline-block';
+            }
+        })
+        .catch(error => {
+            console.error('Fehler bei der API-Anfrage:', error);
+            gamesContainer.innerHTML = `<p class="info-text">Ein Fehler ist aufgetreten.</p>`;
+        });
+}
+
+// --- SPEZIFISCHE FETCH-FUNKTIONEN ---
+
+function fetchUpcomingGames(offset) {
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    const body = `
+        fields name, cover.url, first_release_date, websites.*, platforms.name;
+        where first_release_date > ${currentTimestamp} & cover.url != null;
+        sort first_release_date asc;
+        limit ${gamesPerLoad};
+        offset ${offset};
+    `;
+    fetchGames(body);
+}
+
+function fetchSearchResults(query, offset) {
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    const body = `
+        fields name, cover.url, first_release_date, websites.*, platforms.name;
+        where name ~ *"${query}"* & first_release_date > ${currentTimestamp} & cover.url != null;
+        limit ${gamesPerLoad};
+        offset ${offset};
+    `;
+    fetchGames(body, true, query);
+}
+
+// --- HAUPTLOGIK & EVENT LISTENERS ---
+
+document.addEventListener('DOMContentLoaded', () => {
+    searchForm.addEventListener('submit', (event) => event.preventDefault());
+
+    mainTitle.addEventListener('click', () => {
+        if (currentView !== 'upcoming') {
+            resetToUpcomingView();
+        }
     });
 
-    // 1. Initiale Liste der kommenden Spiele laden
-    fetchUpcomingGames(gameOffset);
-
-    // 2. Listener für die Live-Suche
     searchInput.addEventListener('input', () => {
         clearTimeout(debounceTimer);
         const query = searchInput.value.trim();
@@ -35,110 +100,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentSearchQuery = query;
                 fetchSearchResults(query, gameOffset);
             } else {
-                gamesContainer.innerHTML = '';
-                gameOffset = 0;
-                currentView = 'upcoming';
-                document.getElementById('load-more-btn').style.display = 'inline-block';
-                fetchUpcomingGames(gameOffset);
+                // Nur zurücksetzen, wenn die vorherige Ansicht eine Suche war
+                if (currentView === 'search') {
+                    resetToUpcomingView();
+                }
             }
         }, 400);
     });
 
-    // 3. Listener für den Klick auf den Titel (Zurücksetzen)
-    mainTitle.addEventListener('click', () => {
-        if (currentView !== 'upcoming') {
-            searchInput.value = '';
-            gamesContainer.innerHTML = '';
-            gameOffset = 0;
-            currentView = 'upcoming';
-            document.getElementById('load-more-btn').style.display = 'inline-block';
-            fetchUpcomingGames(gameOffset);
-        }
-    });
-
-    // 4. Listener für den "Mehr laden"-Button
     loadMoreButton.addEventListener('click', () => {
         gameOffset += gamesPerLoad;
-
         if (currentView === 'upcoming') {
             fetchUpcomingGames(gameOffset);
         } else if (currentView === 'search') {
             fetchSearchResults(currentSearchQuery, gameOffset);
         }
     });
+
+    // Initiale Liste laden
+    fetchUpcomingGames(gameOffset);
 });
 
-// Funktion, um kommende Spiele zu holen
-function fetchUpcomingGames(offset) {
-    const apiUrl = '/api/igdb';
-    const currentTimestamp = Math.floor(Date.now() / 1000);
 
-    const body = `
-        fields name, cover.url, first_release_date, websites.*, platforms.name;
-        where first_release_date > ${currentTimestamp} & cover.url != null;
-        sort first_release_date asc;
-        limit ${gamesPerLoad};
-        offset ${offset};
-    `;
+// --- DARSTELLUNGS-FUNKTIONEN ---
 
-    fetch(apiUrl, { method: 'POST', body: body })
-        .then(response => {
-            if (!response.ok) throw new Error(`HTTP-Fehler! Status: ${response.status}`);
-            return response.json();
-        })
-        .then(games => {
-            displayGames(games);
-            if (games.length < gamesPerLoad) document.getElementById('load-more-btn').style.display = 'none';
-        })
-        .catch(error => {
-            console.error('Fehler bei fetchUpcomingGames:', error);
-            document.getElementById('games-container').innerHTML = `<p class="info-text">Spiele konnten nicht geladen werden.</p>`;
-        });
-}
-
-// Funktion, um Suchergebnisse zu holen 
-function fetchSearchResults(query, offset) {
-    const apiUrl = '/api/igdb';
-    const gamesContainer = document.getElementById('games-container');
-    const currentTimestamp = Math.floor(Date.now() / 1000);
-
-    const body = `
-        fields name, cover.url, first_release_date, websites.*, platforms.name;
-        where name ~ *"${query}"* & first_release_date > ${currentTimestamp} & cover.url != null;
-        limit ${gamesPerLoad};
-        offset ${offset};
-    `;
-
-    fetch(apiUrl, { method: 'POST', body: body })
-        .then(response => {
-            if (!response.ok) throw new Error(`HTTP-Fehler! Status: ${response.status}`);
-            return response.json();
-        })
-        .then(games => {
-            if (games.length === 0 && offset === 0) {
-                gamesContainer.innerHTML = `<p class="info-text">Keine kommenden Spiele für "${query}" gefunden.</p>`;
-                document.getElementById('load-more-btn').style.display = 'none';
-                return;
-            }
-            displayGames(games);
-            if (games.length < gamesPerLoad) {
-                document.getElementById('load-more-btn').style.display = 'none';
-            } else {
-                document.getElementById('load-more-btn').style.display = 'inline-block';
-            }
-        })
-        .catch(error => {
-            console.error('Fehler bei der Spielsuche:', error);
-            gamesContainer.innerHTML = `<p class="info-text">Ein Fehler ist aufgetreten. Bitte versuche es später erneut.</p>`;
-        });
-}
-
-// Funktion, um die Spiele-Karten zu erstellen und anzuzeigen
 function displayGames(games) {
     const container = document.getElementById('games-container');
-
+    
     games.forEach(game => {
-
         const placeholderImageUrl = 'data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" width="280" height="160" viewBox="0 0 280 160"%3e%3crect fill="%232a2a2a" width="100%" height="100%"/%3e%3ctext fill="%23666" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="16" font-family="sans-serif"%3eKein Cover%3c/text%3e%3c/svg%3e';
         const coverUrl = game.cover ? game.cover.url.replace('t_thumb', 't_cover_big') : placeholderImageUrl;
 
@@ -150,13 +139,12 @@ function displayGames(games) {
             if (platformNames.some(p => p.includes('PlayStation'))) uniquePlatforms.add('<i class="fa-brands fa-playstation"></i>');
             if (platformNames.some(p => p.includes('Xbox'))) uniquePlatforms.add('<i class="fa-brands fa-xbox"></i>');
             if (platformNames.some(p => p.includes('Nintendo'))) uniquePlatforms.add('<i class="fa-brands fa-nintendo-switch"></i>');
-
             platformIcons = [...uniquePlatforms].join(' ');
         }
-
+        
         const releaseDate = game.first_release_date ? new Date(game.first_release_date * 1000) : null;
         const storeLink = getStoreLink(game.websites);
-
+        
         const imageElement = storeLink
             ? `<a href="${storeLink}" target="_blank" rel="noopener noreferrer"><img src="${coverUrl}" alt="Cover von ${game.name}" class="game-image"></a>`
             : `<img src="${coverUrl}" alt="Cover von ${game.name}" class="game-image">`;
@@ -182,7 +170,6 @@ function displayGames(games) {
     });
 }
 
-// Hilfsfunktion, um den besten Store-Link auszuwählen
 function getStoreLink(websites) {
     if (!websites) return null;
     const storePriority = { 13: 1, 16: 2, 17: 3, 1: 4 };
@@ -198,7 +185,6 @@ function getStoreLink(websites) {
     return bestLink;
 }
 
-// Funktion für den Countdown-Timer
 function startCountdown(elementId, releaseTimestamp) {
     const timerElement = document.getElementById(elementId);
     if (!timerElement) return;
