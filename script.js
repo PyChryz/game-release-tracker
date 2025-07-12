@@ -26,14 +26,16 @@ function resetToUpcomingView() {
 // Allgemeine Funktion zum Abrufen von Spieldaten
 function fetchGames(body, isSearch = false, query = '') {
     const apiUrl = '/api/igdb';
-    const loader = document.getElementById('loader'); // Referenz zum Loader holen
+    const loader = document.getElementById('loader');
 
-        // Nur den Loader anzeigen, wenn wir die Seite neu befüllen (Offset 0)
+    // Loader anzeigen und Container leeren, wenn es eine neue Suche/Ansicht ist
     if (gameOffset === 0) {
-        gamesContainer.innerHTML = ''; // Container leeren
-        loader.style.display = 'block'; // Loader anzeigen
+        gamesContainer.innerHTML = '';
+        loader.style.display = 'block';
     }
 
+    // "Mehr laden"-Button während des Ladens ausblenden
+    loadMoreButton.style.display = 'none';
 
     fetch(apiUrl, { method: 'POST', body: body })
         .then(response => {
@@ -41,13 +43,16 @@ function fetchGames(body, isSearch = false, query = '') {
             return response.json();
         })
         .then(games => {
-            loader.style.display = 'none'; // Loader ausblenden
+            loader.style.display = 'none'; // Loader immer ausblenden, wenn die Antwort da ist
+
             if (isSearch && games.length === 0 && gameOffset === 0) {
                 gamesContainer.innerHTML = `<p class="info-text">Keine kommenden Spiele für "${query}" gefunden.</p>`;
-                loadMoreButton.style.display = 'none';
-                return;
+                return; // Wichtig: Funktion hier beenden
             }
+
             displayGames(games);
+
+            // Button nur anzeigen, wenn es potenziell mehr Ergebnisse gibt
             if (games.length < gamesPerLoad) {
                 loadMoreButton.style.display = 'none';
             } else {
@@ -56,6 +61,7 @@ function fetchGames(body, isSearch = false, query = '') {
         })
         .catch(error => {
             console.error('Fehler bei der API-Anfrage:', error);
+            loader.style.display = 'none'; // Loader auch bei Fehler ausblenden
             gamesContainer.innerHTML = `<p class="info-text">Ein Fehler ist aufgetreten.</p>`;
         });
 }
