@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 4. Listener für den "Mehr laden"-Button
     loadMoreButton.addEventListener('click', () => {
         gameOffset += gamesPerLoad;
-        
+
         if (currentView === 'upcoming') {
             fetchUpcomingGames(gameOffset);
         } else if (currentView === 'search') {
@@ -76,18 +76,18 @@ function fetchUpcomingGames(offset) {
     `;
 
     fetch(apiUrl, { method: 'POST', body: body })
-    .then(response => {
-        if (!response.ok) throw new Error(`HTTP-Fehler! Status: ${response.status}`);
-        return response.json();
-    })
-    .then(games => {
-        displayGames(games);
-        if (games.length < gamesPerLoad) document.getElementById('load-more-btn').style.display = 'none';
-    })
-    .catch(error => {
-        console.error('Fehler bei fetchUpcomingGames:', error);
-        document.getElementById('games-container').innerHTML = `<p class="info-text">Spiele konnten nicht geladen werden.</p>`;
-    });
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP-Fehler! Status: ${response.status}`);
+            return response.json();
+        })
+        .then(games => {
+            displayGames(games);
+            if (games.length < gamesPerLoad) document.getElementById('load-more-btn').style.display = 'none';
+        })
+        .catch(error => {
+            console.error('Fehler bei fetchUpcomingGames:', error);
+            document.getElementById('games-container').innerHTML = `<p class="info-text">Spiele konnten nicht geladen werden.</p>`;
+        });
 }
 
 // Funktion, um Suchergebnisse zu holen (ruft unsere Netlify Function auf)
@@ -98,39 +98,39 @@ function fetchSearchResults(query, offset) {
     const body = `
         fields name, cover.url, first_release_date, websites.*, platforms.name;
         search "${query}";
-        where cover.url != null;
+        where cover.url != null & first_release_date > ${currentTimestamp};;
         limit ${gamesPerLoad};
         offset ${offset};
     `;
 
     fetch(apiUrl, { method: 'POST', body: body })
-    .then(response => {
-        if (!response.ok) throw new Error(`HTTP-Fehler! Status: ${response.status}`);
-        return response.json();
-    })
-    .then(games => {
-        if (games.length === 0 && offset === 0) {
-            gamesContainer.innerHTML = `<p class="info-text">Keine Spiele für "${query}" gefunden.</p>`;
-            document.getElementById('load-more-btn').style.display = 'none';
-            return;
-        }
-        displayGames(games);
-        if (games.length < gamesPerLoad) {
-            document.getElementById('load-more-btn').style.display = 'none';
-        } else {
-            document.getElementById('load-more-btn').style.display = 'inline-block';
-        }
-    })
-    .catch(error => {
-        console.error('Fehler bei der Spielsuche:', error);
-        gamesContainer.innerHTML = `<p class="info-text">Ein Fehler ist aufgetreten. Bitte versuche es später erneut.</p>`;
-    });
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP-Fehler! Status: ${response.status}`);
+            return response.json();
+        })
+        .then(games => {
+            if (games.length === 0 && offset === 0) {
+                gamesContainer.innerHTML = `<p class="info-text">Keine kommenden Spiele für "${query}" gefunden.</p>`;
+                document.getElementById('load-more-btn').style.display = 'none';
+                return;
+            }
+            displayGames(games);
+            if (games.length < gamesPerLoad) {
+                document.getElementById('load-more-btn').style.display = 'none';
+            } else {
+                document.getElementById('load-more-btn').style.display = 'inline-block';
+            }
+        })
+        .catch(error => {
+            console.error('Fehler bei der Spielsuche:', error);
+            gamesContainer.innerHTML = `<p class="info-text">Ein Fehler ist aufgetreten. Bitte versuche es später erneut.</p>`;
+        });
 }
 
 // Funktion, um die Spiele-Karten zu erstellen und anzuzeigen
 function displayGames(games) {
     const container = document.getElementById('games-container');
-    
+
     games.forEach(game => {
         if (!game.cover || !game.cover.url) return;
 
@@ -146,7 +146,7 @@ function displayGames(games) {
         const coverUrl = game.cover.url.replace('t_thumb', 't_cover_big');
         const releaseDate = game.first_release_date ? new Date(game.first_release_date * 1000) : null;
         const storeLink = getStoreLink(game.websites);
-        
+
         const imageElement = storeLink
             ? `<a href="${storeLink}" target="_blank" rel="noopener noreferrer"><img src="${coverUrl}" alt="Cover von ${game.name}" class="game-image"></a>`
             : `<img src="${coverUrl}" alt="Cover von ${game.name}" class="game-image">`;
