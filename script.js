@@ -17,7 +17,6 @@ const searchForm = document.getElementById('search-form');
 // Setzt die Ansicht auf die Startseite zurück
 function resetToUpcomingView() {
     searchInput.value = '';
-    gamesContainer.innerHTML = '';
     gameOffset = 0;
     currentView = 'upcoming';
     loadMoreButton.style.display = 'inline-block';
@@ -27,6 +26,14 @@ function resetToUpcomingView() {
 // Allgemeine Funktion zum Abrufen von Spieldaten
 function fetchGames(body, isSearch = false, query = '') {
     const apiUrl = '/api/igdb';
+    const loader = document.getElementById('loader'); // Referenz zum Loader holen
+
+        // Nur den Loader anzeigen, wenn wir die Seite neu befüllen (Offset 0)
+    if (gameOffset === 0) {
+        gamesContainer.innerHTML = ''; // Container leeren
+        loader.style.display = 'block'; // Loader anzeigen
+    }
+
 
     fetch(apiUrl, { method: 'POST', body: body })
         .then(response => {
@@ -34,6 +41,7 @@ function fetchGames(body, isSearch = false, query = '') {
             return response.json();
         })
         .then(games => {
+            loader.style.display = 'none'; // Loader ausblenden
             if (isSearch && games.length === 0 && gameOffset === 0) {
                 gamesContainer.innerHTML = `<p class="info-text">Keine kommenden Spiele für "${query}" gefunden.</p>`;
                 loadMoreButton.style.display = 'none';
@@ -94,7 +102,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         debounceTimer = setTimeout(() => {
             if (query) {
-                gamesContainer.innerHTML = '';
                 gameOffset = 0;
                 currentView = 'search';
                 currentSearchQuery = query;
@@ -146,8 +153,8 @@ function displayGames(games) {
         const storeLink = getStoreLink(game.websites);
         
         const imageElement = storeLink
-            ? `<a href="${storeLink}" target="_blank" rel="noopener noreferrer"><img src="${coverUrl}" alt="Cover von ${game.name}" class="game-image"></a>`
-            : `<img src="${coverUrl}" alt="Cover von ${game.name}" class="game-image">`;
+            ? `<a href="${storeLink}" target="_blank" rel="noopener noreferrer"><img src="${coverUrl}" alt="Cover von ${game.name}" class="game-image" loading="lazy"></a>`
+            : `<img src="${coverUrl}" alt="Cover von ${game.name}" class="game-image" loading="lazy">`;
 
         const gameCard = document.createElement('div');
         gameCard.classList.add('game-card');
