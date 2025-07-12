@@ -102,6 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         debounceTimer = setTimeout(() => {
             if (query) {
+                gamesContainer.innerHTML = '';
                 gameOffset = 0;
                 currentView = 'search';
                 currentSearchQuery = query;
