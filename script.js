@@ -149,6 +149,8 @@ function displayGames(games) {
         if (game.platforms) {
             const platformNames = game.platforms.map(p => p.name);
 
+            console.log(`Spiel: ${game.name}, Plattformen:`, platformNames);
+
             const uniquePlatforms = new Set();
             if (platformNames.includes('PC (Microsoft Windows)')) uniquePlatforms.add('<i class="fa-brands fa-windows"></i>');
             if (platformNames.some(p => p.includes('PlayStation'))) uniquePlatforms.add('<i class="fa-brands fa-playstation"></i>');
