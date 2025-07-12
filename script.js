@@ -153,7 +153,7 @@ function displayGames(games) {
             if (platformNames.includes('PC (Microsoft Windows)')) uniquePlatforms.add('<i class="fa-brands fa-windows"></i>');
             if (platformNames.some(p => p.includes('PlayStation'))) uniquePlatforms.add('<i class="fa-brands fa-playstation"></i>');
             if (platformNames.some(p => p.includes('Xbox'))) uniquePlatforms.add('<i class="fa-brands fa-xbox"></i>');
-            if (platformNames.some(p => p.includes('Nintendo Switch') || p.includes('Nintendo Switch 2'))) uniquePlatforms.add('<i class="fa-brands fa-nintendo-switch"></i>');
+            if (platformNames.some(p => p.includes('Nintendo Switch') || p.includes('Nintendo Switch 2'))) uniquePlatforms.add('<i class="fa-brands fa-xbox"></i>');
             platformIcons = [...uniquePlatforms].join(' ');
         }
 
