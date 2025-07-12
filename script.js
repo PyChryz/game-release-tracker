@@ -99,7 +99,6 @@ function fetchSearchResults(query, offset) {
         fields name, cover.url, first_release_date, websites.*, platforms.name;
         search "${query}";
         where cover.url != null;
-        // sort first_release_date desc; // DIESE ZEILE ENTFERNEN
         limit ${gamesPerLoad};
         offset ${offset};
     `;
