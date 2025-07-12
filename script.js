@@ -140,9 +140,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function displayGames(games) {
     const container = document.getElementById('games-container');
-    
+
     games.forEach(game => {
-        const placeholderImageUrl = 'data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" width="280" height="160" viewBox="0 0 280 160"%3e%3crect fill="%232a2a2a" width="100%" height="100%"/%3e%3ctext fill="%23666" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="16" font-family="sans-serif"%3eKein Cover%3c/text%3e%3c/svg%3e';
+        const placeholderImageUrl = 'data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" width="280" height="200" viewBox="0 0 280 200"%3e%3crect fill="%232a2a2a" width="100%" height="100%"/%3e%3ctext fill="%23666" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="16" font-family="sans-serif"%3eKein Cover%3c/text%3e%3c/svg%3e';
         const coverUrl = game.cover ? game.cover.url.replace('t_thumb', 't_cover_big') : placeholderImageUrl;
 
         let platformIcons = '';
@@ -155,13 +155,25 @@ function displayGames(games) {
             if (platformNames.some(p => p.includes('Nintendo'))) uniquePlatforms.add('<i class="fa-brands fa-nintendo-switch"></i>');
             platformIcons = [...uniquePlatforms].join(' ');
         }
-        
+
         const releaseDate = game.first_release_date ? new Date(game.first_release_date * 1000) : null;
         const storeLink = getStoreLink(game.websites);
-        
-        const imageElement = storeLink
-            ? `<a href="${storeLink}" target="_blank" rel="noopener noreferrer"><img src="${coverUrl}" alt="Cover von ${game.name}" class="game-image" loading="lazy"></a>`
-            : `<img src="${coverUrl}" alt="Cover von ${game.name}" class="game-image" loading="lazy">`;
+
+
+        // Wir fügen dem Container eine Klasse und das Hintergrundbild als inline-Style hinzu.
+        const imageContainerTag = storeLink ? 'a' : 'div';
+        const imageElement = `
+            <${imageContainerTag} 
+                ${storeLink ? `href="${storeLink}"` : ''} 
+                class="game-image-container" 
+                style="background-image: url(${coverUrl})" 
+                target="_blank" 
+                rel="noopener noreferrer"
+            >
+                <img src="${coverUrl}" alt="Cover von ${game.name}" class="game-image" loading="lazy">
+            </${imageContainerTag}>
+        `;
+
 
         const gameCard = document.createElement('div');
         gameCard.classList.add('game-card');

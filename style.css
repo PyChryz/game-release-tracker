@@ -65,10 +65,38 @@ h1 {
 }
 
 .game-image {
-    width: 100%;
-    height: 200px;
+    max-width: 100%;
+    max-height: 100%;
+    height: 100%; /* Höhe an den Container anpassen */
     object-fit: contain;
-    display: block;
+    position: relative; /* Damit es über dem unscharfen Hintergrund liegt */
+    z-index: 2;
+}
+
+.game-image-container {
+    height: 200px; /* Die Höhe des Bildbereichs wird hier definiert */
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden; /* Wichtig, damit der unscharfe Rand nicht übersteht */
+    position: relative;
+    background-color: #1a1a1a; /* Fallback-Farbe */
+    background-size: cover; /* Zoomt das Hintergrundbild */
+    background-position: center;
+}
+
+.game-image-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: inherit; /* Erbt das Hintergrundbild vom Elternelement */
+    filter: blur(15px) brightness(0.6); /* Stärke des Weichzeichners und Abdunklung */
+    transform: scale(1.2); /* Verhindert hässliche Ränder durch den Weichzeichner */
+    z-index: 1;
 }
 
 .card-header {
