@@ -113,13 +113,14 @@ h1 {
     /* Abstand zwischen den Icons */
 }
 
-.platform-icons i {
-    /* Alle Icons allgemein */
-    color: #a9a9a9;
-    /* Ein neutrales Grau */
-}
+/*
+ .platform-icons i { 
+   // Allgemeiner stil für alle Plattform-Icons
+    color: #a9a9a9; 
+} 
+*/
 
-/* Spezifische Farben für die Marken (optional) */
+/* Spezifische Farben für die Marken */
 .fa-playstation {
     color: #0070d1;
 }
