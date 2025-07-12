@@ -100,10 +100,10 @@ function fetchUpcomingGames(offset) {
 function fetchSearchResults(query, offset) {
     const apiUrl = '/api/igdb';
     const gamesContainer = document.getElementById('games-container');
+    const currentTimestamp = Math.floor(Date.now() / 1000);
 
     const body = `
         fields name, cover.url, first_release_date, websites.*, platforms.name;
-        search "${query}";
         where name ~ *"${query}"* & first_release_date > ${currentTimestamp} & cover.url != null;
         limit ${gamesPerLoad};
         offset ${offset};
@@ -143,6 +143,7 @@ function displayGames(games) {
         let platformIcons = '';
         if (game.platforms) {
             const platformNames = game.platforms.map(p => p.name);
+            const uniquePlatforms = new Set();
             if (platformNames.includes('PC (Microsoft Windows)')) uniquePlatforms.add('<i class="fa-brands fa-windows"></i>');
             if (platformNames.some(p => p.includes('PlayStation'))) uniquePlatforms.add('<i class="fa-brands fa-playstation"></i>');
             if (platformNames.some(p => p.includes('Xbox'))) uniquePlatforms.add('<i class="fa-brands fa-xbox"></i>');
