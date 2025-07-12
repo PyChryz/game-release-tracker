@@ -138,7 +138,9 @@ function displayGames(games) {
     const container = document.getElementById('games-container');
 
     games.forEach(game => {
-        if (!game.cover || !game.cover.url) return;
+
+        const placeholderImageUrl = 'data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" width="280" height="160" viewBox="0 0 280 160"%3e%3crect fill="%232a2a2a" width="100%" height="100%"/%3e%3ctext fill="%23666" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="16" font-family="sans-serif"%3eKein Cover%3c/text%3e%3c/svg%3e';
+        const coverUrl = game.cover ? game.cover.url.replace('t_thumb', 't_cover_big') : placeholderImageUrl;
 
         let platformIcons = '';
         if (game.platforms) {
@@ -152,7 +154,6 @@ function displayGames(games) {
             platformIcons = [...uniquePlatforms].join(' ');
         }
 
-        const coverUrl = game.cover.url.replace('t_thumb', 't_cover_big');
         const releaseDate = game.first_release_date ? new Date(game.first_release_date * 1000) : null;
         const storeLink = getStoreLink(game.websites);
 
