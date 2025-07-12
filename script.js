@@ -1,6 +1,6 @@
 // Globale Variablen für den Zustand der Seite
 let gameOffset = 0;
-const gamesPerLoad = 20; 
+const gamesPerLoad = 20;
 let currentView = 'upcoming'; // Mögliche Werte: 'upcoming' oder 'search'
 let currentSearchQuery = '';
 let debounceTimer;
@@ -12,6 +12,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('search-input');
     const gamesContainer = document.getElementById('games-container');
     const mainTitle = document.getElementById('main-title');
+    const searchForm = document.getElementById('search-form');
+
+    // Verhindert das Neuladen der Seite bei Enter-Druck im Suchfeld
+    searchForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+    });
 
     // 1. Initiale Liste der kommenden Spiele laden
     fetchUpcomingGames(gameOffset);
@@ -98,7 +104,7 @@ function fetchSearchResults(query, offset) {
     const body = `
         fields name, cover.url, first_release_date, websites.*, platforms.name;
         search "${query}";
-        where cover.url != null & first_release_date > ${currentTimestamp};;
+        where name ~ *"${query}"* & first_release_date > ${currentTimestamp} & cover.url != null;
         limit ${gamesPerLoad};
         offset ${offset};
     `;
@@ -137,10 +143,12 @@ function displayGames(games) {
         let platformIcons = '';
         if (game.platforms) {
             const platformNames = game.platforms.map(p => p.name);
-            if (platformNames.includes('PC (Microsoft Windows)')) platformIcons += '💻 ';
-            if (platformNames.some(p => p.includes('PlayStation'))) platformIcons += '🎮 ';
-            if (platformNames.some(p => p.includes('Xbox'))) platformIcons += '❎ ';
-            if (platformNames.some(p => p.includes('Nintendo'))) platformIcons += '🍄 ';
+            if (platformNames.includes('PC (Microsoft Windows)')) uniquePlatforms.add('<i class="fa-brands fa-windows"></i>');
+            if (platformNames.some(p => p.includes('PlayStation'))) uniquePlatforms.add('<i class="fa-brands fa-playstation"></i>');
+            if (platformNames.some(p => p.includes('Xbox'))) uniquePlatforms.add('<i class="fa-brands fa-xbox"></i>');
+            if (platformNames.some(p => p.includes('Nintendo'))) uniquePlatforms.add('<i class="fa-brands fa-nintendo-switch"></i>');
+
+            platformIcons = [...uniquePlatforms].join(' ');
         }
 
         const coverUrl = game.cover.url.replace('t_thumb', 't_cover_big');

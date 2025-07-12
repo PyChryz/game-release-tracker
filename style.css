@@ -52,7 +52,7 @@ h1 {
     background-color: #2a2a2a;
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
     transition: transform 0.2s ease-in-out;
 }
 
@@ -75,7 +75,33 @@ h1 {
 }
 
 .platform-icons {
-    font-size: 1.2rem;;
+    font-size: 1.1rem;
+    display: flex;
+    gap: 8px;
+    /* Abstand zwischen den Icons */
+}
+
+.platform-icons i {
+    /* Alle Icons allgemein */
+    color: #a9a9a9;
+    /* Ein neutrales Grau */
+}
+
+/* Spezifische Farben für die Marken (optional) */
+.fa-playstation {
+    color: #0070d1;
+}
+
+.fa-xbox {
+    color: #107c10;
+}
+
+.fa-windows {
+    color: #00a4ef;
+}
+
+.fa-nintendo-switch {
+    color: #e60012;
 }
 
 .card-content {
