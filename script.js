@@ -44,7 +44,6 @@ const platformStoreRules = new Map([
     [49, { type: 'domain', domains: ['xbox.com', 'microsoft.com'] }],
     [169, { type: 'domain', domains: ['xbox.com', 'microsoft.com'] }],
     [130, { type: 'domain', domains: ['nintendo'] }],
-    // NEU
     [508, { type: 'domain', domains: ['nintendo'] }]
 ]);
 
@@ -123,10 +122,13 @@ function fetchAndDisplayGames() {
 function fetchGamesFromAPI(offset, query = '', platformIds = new Set(), isTodayFilter) {
     const conditions = [];
     const sort = 'sort first_release_date asc;';
-
     const hasPlatformFilter = platformIds.size > 0;
 
-    // Baue Datums-Bedingung
+    // =================================================================
+    // ÜBERARBEITET FÜR BESSERE PERFORMANCE
+    // Wir filtern jetzt immer auf dem schnelleren `first_release_date`
+    // und `platforms`-Feld, um Timeouts zu vermeiden.
+    // =================================================================
     let dateCondition;
     if (isTodayFilter) {
         const now = new Date();
@@ -134,26 +136,22 @@ function fetchGamesFromAPI(offset, query = '', platformIds = new Set(), isTodayF
         const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
         const startTs = Math.floor(startOfDay.getTime() / 1000);
         const endTs = Math.floor(endOfDay.getTime() / 1000);
-        // Wenn Plattform-Filter aktiv, ziele auf release_dates.date, sonst auf first_release_date
-        dateCondition = hasPlatformFilter
-            ? `(release_dates.date >= ${startTs} & release_dates.date <= ${endTs})`
-            : `(first_release_date >= ${startTs} & first_release_date <= ${endTs})`;
+        dateCondition = `(first_release_date >= ${startTs} & first_release_date <= ${endTs})`;
     } else {
         const nowUnix = Math.floor(Date.now() / 1000);
-        dateCondition = hasPlatformFilter
-            ? `(release_dates.date > ${nowUnix})`
-            : `(first_release_date > ${nowUnix})`;
+        dateCondition = `(first_release_date > ${nowUnix})`;
     }
     conditions.push(dateCondition);
 
-    // Baue andere Bedingungen
     if (query) {
         conditions.push(`(name ~ *"${query}"*)`);
     }
     if (hasPlatformFilter) {
-        // Ziele immer auf release_dates.platform, wenn ein Plattformfilter gesetzt ist.
-        conditions.push(`(release_dates.platform = (${[...platformIds].join(',')}))`);
+        conditions.push(`(platforms = (${[...platformIds].join(',')}))`);
     }
+    // =================================================================
+    // ENDE DER ÄNDERUNG
+    // =================================================================
 
     const whereClause = conditions.join(' & ');
     
