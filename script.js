@@ -33,7 +33,8 @@ const platformIconMap = {
     169: '<i class="fa-brands fa-xbox"></i>',
     48: '<i class="fa-brands fa-playstation"></i>',
     167: '<i class="fa-brands fa-playstation"></i>',
-    130: '<i class="fas fa-gamepad"></i>'
+    130: '<i class="fas fa-gamepad"></i>',
+    390: '<i class="fas fa-gamepad"></i>' // Icon für Switch 2 (kann angepasst werden)
 };
 
 const platformStoreRules = new Map([
@@ -42,7 +43,8 @@ const platformStoreRules = new Map([
     [167, { type: 'domain', domains: ['store.playstation.com'] }],
     [49, { type: 'domain', domains: ['xbox.com', 'microsoft.com'] }],
     [169, { type: 'domain', domains: ['xbox.com', 'microsoft.com'] }],
-    [130, { type: 'domain', domains: ['nintendo'] }]
+    [130, { type: 'domain', domains: ['nintendo'] }],
+    [390, { type: 'domain', domains: ['nintendo'] }] // Regel für Switch 2
 ]);
 
 
@@ -119,37 +121,48 @@ function fetchAndDisplayGames() {
 // ===================================
 function fetchGamesFromAPI(offset, query = '', platformIds = new Set(), isTodayFilter) {
     const conditions = [];
-    const sort = 'sort first_release_date asc;';
+    // Sortierung ist jetzt komplexer und wird innerhalb der Logik gesetzt.
+    let sort = 'sort first_release_date asc;';
 
     const hasPlatformFilter = platformIds.size > 0;
 
-    // Baue Datums-Bedingung
-    let dateCondition;
-    if (isTodayFilter) {
-        const now = new Date();
-        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-        const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-        const startTs = Math.floor(startOfDay.getTime() / 1000);
-        const endTs = Math.floor(endOfDay.getTime() / 1000);
-        // Wenn Plattform-Filter aktiv, ziele auf release_dates.date, sonst auf first_release_date
-        dateCondition = hasPlatformFilter
-            ? `(release_dates.date >= ${startTs} & release_dates.date <= ${endTs})`
-            : `(first_release_date >= ${startTs} & first_release_date <= ${endTs})`;
-    } else {
-        const nowUnix = Math.floor(Date.now() / 1000);
-        dateCondition = hasPlatformFilter
-            ? `(release_dates.date > ${nowUnix})`
-            : `(first_release_date > ${nowUnix})`;
-    }
-    conditions.push(dateCondition);
+    // A) Wenn Plattformfilter aktiv ist, muss die Abfrage anders aufgebaut werden
+    if (hasPlatformFilter) {
+        const platformList = [...platformIds].join(',');
+        let dateClause;
 
-    // Baue andere Bedingungen
+        if (isTodayFilter) {
+            const now = new Date();
+            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+            const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+            const startTs = Math.floor(startOfDay.getTime() / 1000);
+            const endTs = Math.floor(endOfDay.getTime() / 1000);
+            dateClause = `date >= ${startTs} & date <= ${endTs}`;
+        } else {
+            const nowUnix = Math.floor(Date.now() / 1000);
+            dateClause = `date > ${nowUnix}`;
+        }
+        
+        // Baut die verschachtelte Abfrage für release_dates
+        conditions.push(`(release_dates = {* where ${dateClause} & platform = (${platformList}) *})`);
+        
+    // B) Ohne Plattformfilter bleibt die Logik einfacher
+    } else {
+        if (isTodayFilter) {
+            const now = new Date();
+            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+            const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+            const startTs = Math.floor(startOfDay.getTime() / 1000);
+            const endTs = Math.floor(endOfDay.getTime() / 1000);
+            conditions.push(`(first_release_date >= ${startTs} & first_release_date <= ${endTs})`);
+        } else {
+            const nowUnix = Math.floor(Date.now() / 1000);
+            conditions.push(`(first_release_date > ${nowUnix})`);
+        }
+    }
+
     if (query) {
         conditions.push(`(name ~ *"${query}"*)`);
-    }
-    if (hasPlatformFilter) {
-        // Ziele immer auf release_dates.platform, wenn ein Plattformfilter gesetzt ist.
-        conditions.push(`(release_dates.platform = (${[...platformIds].join(',')}))`);
     }
 
     const whereClause = conditions.join(' & ');
