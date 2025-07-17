@@ -293,7 +293,6 @@ window.addEventListener("load", function(){
       },
       "theme": "classic",
       "position": "bottom",
-      "revokable": false,
       "type": "opt-in",
       "content": {
         "message": "Wir würden gerne Cookies für Analyse-Zwecke verwenden, um die Webseite zu verbessern. Stimmst du dem zu?",
@@ -302,7 +301,6 @@ window.addEventListener("load", function(){
         "link": "Mehr erfahren",
         "href": "/datenschutz.html"
       },
-      // --- KORRIGIERTER TEIL ---
       // Diese Funktion wird jedes Mal ausgeführt, wenn sich der Status ändert ODER
       // beim Seitenaufruf, wenn bereits eine Zustimmung vorliegt.
       onStatusChange: function(status) {

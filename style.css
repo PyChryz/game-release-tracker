@@ -229,3 +229,8 @@ footer a {
 footer a:hover {
     text-decoration: underline;
 }
+
+/* Versteckt den permanenten "Cookie Policy"-Reiter */
+.cc-revoke {
+    display: none !important;
+}
