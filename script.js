@@ -323,66 +323,64 @@ function getStoreLink(websites, activeFilters) {
     const STORE_GOG = 17;
     const STORE_NINTENDO = 18;
 
-    // Helper-Funktion, die einen Link anhand der Store-Kategorie findet
+    // Helper-Funktion bleibt gleich
     const findStoreLinkByCategory = (categoryId) => {
         const site = websites.find(s => s.category === categoryId);
         return site ? site.url : null;
     };
 
-    // LOGIK FÜR AKTIVE FILTER
+    let categoriesToSearch = [];
+
+    // NEUE LOGIK: Baue eine Suchliste basierend auf den aktiven Filtern
     if (activeFilters.size > 0) {
-        let storeLink = null;
-
-        // Prüfe auf PlayStation
+        // Füge die Stores basierend auf den aktiven Filtern hinzu.
+        // Die Reihenfolge hier bestimmt die Priorität.
         if (activeFilters.has(167) || activeFilters.has(48)) {
-            storeLink = findStoreLinkByCategory(STORE_PLAYSTATION);
+            categoriesToSearch.push(STORE_PLAYSTATION);
         }
-        // Prüfe auf Xbox
-        else if (activeFilters.has(169) || activeFilters.has(49)) {
-            storeLink = findStoreLinkByCategory(STORE_XBOX);
+        if (activeFilters.has(169) || activeFilters.has(49)) {
+            categoriesToSearch.push(STORE_XBOX);
         }
-        // Prüfe auf Nintendo
-        else if (activeFilters.has(130)) {
-            storeLink = findStoreLinkByCategory(STORE_NINTENDO);
+        if (activeFilters.has(130)) {
+            categoriesToSearch.push(STORE_NINTENDO);
         }
-        // Prüfe auf PC (hier können mehrere Stores relevant sein)
-        else if (activeFilters.has(6)) {
-            const steamLink = findStoreLinkByCategory(STORE_STEAM);
-            if (steamLink) {
-                const url = new URL(steamLink);
-                url.searchParams.set('l', 'german');
-                storeLink = url.toString();
-            } else {
-                // Suche nach Epic oder GOG, wenn kein Steam-Link da ist
-                storeLink = findStoreLinkByCategory(STORE_EPIC) || findStoreLinkByCategory(STORE_GOG);
-            }
+        if (activeFilters.has(6)) {
+            // PC-Stores bekommen ihre eigene Priorität
+            categoriesToSearch.push(STORE_STEAM, STORE_EPIC, STORE_GOG);
         }
-        
-        // ✅ WICHTIGSTE ÄNDERUNG:
-        // Gib das Ergebnis der Filter-Suche direkt zurück.
-        // Die Funktion stoppt hier, wenn ein Filter aktiv war.
-        return storeLink;
-    }
-
-    // FALLBACK-LOGIK (wird jetzt nur noch ausgeführt, wenn KEIN Filter aktiv ist)
-    const steamUrl = findStoreLinkByCategory(STORE_STEAM);
-    if (steamUrl) {
-        const url = new URL(steamUrl);
-        url.searchParams.set('l', 'german');
-        return url.toString();
+    } else {
+        // FALLBACK-LOGIK: Wenn KEIN Filter aktiv ist, benutze eine Standard-Reihenfolge
+        categoriesToSearch = [
+            STORE_STEAM,
+            STORE_PLAYSTATION,
+            STORE_XBOX,
+            STORE_NINTENDO,
+            STORE_EPIC,
+            STORE_GOG,
+            STORE_OFFICIAL
+        ];
     }
     
-    // Nimm den nächstbesten Store-Link in dieser Reihenfolge
-    const fallbackStoreUrls = [
-        findStoreLinkByCategory(STORE_PLAYSTATION),
-        findStoreLinkByCategory(STORE_XBOX),
-        findStoreLinkByCategory(STORE_NINTENDO),
-        findStoreLinkByCategory(STORE_EPIC),
-        findStoreLinkByCategory(STORE_GOG),
-        findStoreLinkByCategory(STORE_OFFICIAL) // Offizielle Seite als letzte Option
-    ];
+    // Durchsuche die erstellte Liste und gib den ersten Treffer zurück
+    for (const categoryId of categoriesToSearch) {
+        const link = findStoreLinkByCategory(categoryId);
+        if (link) {
+            // Spezielle Logik für Steam, um den deutschen Store zu erzwingen
+            if (categoryId === STORE_STEAM) {
+                try {
+                    const url = new URL(link);
+                    url.searchParams.set('l', 'german');
+                    return url.toString();
+                } catch (e) {
+                    return link; // Fallback, falls die URL ungültig ist
+                }
+            }
+            return link; // Gib den Link für jeden anderen Store direkt zurück
+        }
+    }
 
-    return fallbackStoreUrls.find(url => url !== null) || null;
+    // Wenn nach der ganzen Suche nichts gefunden wurde
+    return null;
 }
 
 // ===================================
