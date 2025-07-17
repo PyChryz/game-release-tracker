@@ -121,26 +121,35 @@ function fetchGamesFromAPI(offset, query = '', platformIds = new Set(), isTodayF
     const conditions = [];
     const sort = 'sort first_release_date asc;';
 
+    const hasPlatformFilter = platformIds.size > 0;
+
+    // Baue Datums-Bedingung
+    let dateCondition;
     if (isTodayFilter) {
         const now = new Date();
         const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
         const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-
         const startTs = Math.floor(startOfDay.getTime() / 1000);
         const endTs = Math.floor(endOfDay.getTime() / 1000);
-
-        // *** KORREKTUR HIER: Jede Bedingung wird geklammert ***
-        conditions.push(`(first_release_date >= ${startTs} & first_release_date <= ${endTs})`);
+        // Wenn Plattform-Filter aktiv, ziele auf release_dates.date, sonst auf first_release_date
+        dateCondition = hasPlatformFilter
+            ? `(release_dates.date >= ${startTs} & release_dates.date <= ${endTs})`
+            : `(first_release_date >= ${startTs} & first_release_date <= ${endTs})`;
     } else {
         const nowUnix = Math.floor(Date.now() / 1000);
-        conditions.push(`(first_release_date > ${nowUnix})`);
+        dateCondition = hasPlatformFilter
+            ? `(release_dates.date > ${nowUnix})`
+            : `(first_release_date > ${nowUnix})`;
     }
+    conditions.push(dateCondition);
 
+    // Baue andere Bedingungen
     if (query) {
         conditions.push(`(name ~ *"${query}"*)`);
     }
-    if (platformIds.size > 0) {
-        conditions.push(`(platforms = (${[...platformIds].join(',')}))`);
+    if (hasPlatformFilter) {
+        // Ziele immer auf release_dates.platform, wenn ein Plattformfilter gesetzt ist.
+        conditions.push(`(release_dates.platform = (${[...platformIds].join(',')}))`);
     }
 
     const whereClause = conditions.join(' & ');
