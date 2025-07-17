@@ -10,7 +10,7 @@ const countdownElements = [];
 let countdownIntervalId = null;
 let activePlatformFilters = new Set();
 
-const REGION_EUROPPE = 2;
+const REGION_EUROPE = 2;
 const STORE_STEAM = 13;
 const STORE_EPIC  = 16;
 const STORE_GOG   = 17;
