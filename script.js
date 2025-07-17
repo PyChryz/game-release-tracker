@@ -257,3 +257,58 @@ function startCountdown(elementId, releaseTimestamp) {
         timerElement.innerHTML = `${tage}T ${stunden}h ${minuten}m ${sekunden}s`;
     }, 1000);
 }
+
+// --- COOKIE CONSENT INITIALISIERUNG ---
+
+// Diese leere Funktion füllen wir im nächsten Schritt mit dem Google Analytics Code.
+function loadGoogleAnalytics() {
+       console.log("Nutzer hat zugestimmt. Lade Google Analytics...");
+
+    const measurementId = 'G-9MTCLGZVDD'; 
+
+    // Verhindert, dass das Skript mehrfach geladen wird
+    if (window.gtag) {
+        return;
+    }
+
+    // Das erste Google Analytics Skript-Tag erstellen und einfügen
+    const script1 = document.createElement('script');
+    script1.async = true;
+    script1.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
+    document.head.appendChild(script1);
+
+    // Das zweite Skript-Tag mit der Initialisierung erstellen
+    const script2 = document.createElement('script');
+    script2.innerHTML = `
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '${measurementId}');
+    `;
+    document.head.appendChild(script2);
+}
+
+
+// Initialisiert den Consent-Banner, sobald die Seite geladen ist
+window.addEventListener("load", function(){
+    window.cookieconsent.initialise({
+      "palette": {
+        "popup": { "background": "#2a2a2a", "text": "#f0f0f0" },
+        "button": { "background": "#9146ff" }
+      },
+      "theme": "classic",
+      "position": "bottom",
+      "type": "opt-in", // Wichtig: Der Nutzer muss aktiv zustimmen
+      "content": {
+        "message": "Diese Webseite verwendet Cookies zur Analyse, um die Nutzererfahrung zu verbessern. Stimmst du dem zu?",
+        "allow": "Akzeptieren",
+        "deny": "Ablehnen",
+        "link": "Mehr erfahren",
+        "href": "/datenschutz.html"
+      },
+      // Diese Funktion wird NUR ausgeführt, wenn der Nutzer auf "Akzeptieren" klickt
+      onAccept: function() {
+        loadGoogleAnalytics();
+      }
+    })
+});
