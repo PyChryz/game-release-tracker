@@ -10,7 +10,7 @@ const countdownElements = [];
 let countdownIntervalId = null;
 let activePlatformFilters = new Set();
 
-const REGION_EUROPE = 2;
+const REGION_EUROPPE = 2;
 const STORE_STEAM = 13;
 const STORE_EPIC  = 16;
 const STORE_GOG   = 17;
@@ -60,9 +60,7 @@ const loader         = document.getElementById('loader');
 // UTILS
 // ===================================
 /**
- * Creates a debounced version of fn.
- * @param {Function} fn 
- * @param {number} delay 
+ * Debounce-Funktion
  */
 function debounce(fn, delay) {
   let timeout;
@@ -83,7 +81,9 @@ document.addEventListener('DOMContentLoaded', () => {
   toggleButton?.addEventListener('click', () => {
     document.body.classList.toggle('light-mode');
     if (siteLogo) {
-      siteLogo.src = document.body.classList.contains('light-mode') ? darkLogo : lightLogo;
+      siteLogo.src = document.body.classList.contains('light-mode')
+        ? darkLogo
+        : lightLogo;
     }
   });
 
@@ -93,7 +93,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentView !== 'upcoming') resetToUpcomingView();
   });
 
-  // Debounced Input-Handler
   searchInput.addEventListener(
     'input',
     debounce(() => {
@@ -131,7 +130,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Initialer Aufruf
   fetchUpcomingGames(gameOffset, activePlatformFilters);
 });
 
@@ -139,11 +137,6 @@ document.addEventListener('DOMContentLoaded', () => {
 // API-FUNKTIONEN
 // ===================================
 function fetchGames(body, isSearch = false, query = '') {
-  if (!Array.isArray(gamesContainer)) {
-    console.error('gamesContainer fehlt oder ist kein Array.');
-    return;
-  }
-
   if (gameOffset === 0) {
     gamesContainer.innerHTML = '';
     loader && (loader.style.display = 'block');
@@ -165,7 +158,8 @@ function fetchGames(body, isSearch = false, query = '') {
         return;
       }
       displayGames(games);
-      loadMoreButton.style.display = games.length < gamesPerLoad ? 'none' : 'inline-block';
+      loadMoreButton.style.display =
+        games.length < gamesPerLoad ? 'none' : 'inline-block';
     })
     .catch(err => {
       console.error('API-Fehler:', err);
@@ -220,11 +214,16 @@ function displayGames(games) {
   const fragment = document.createDocumentFragment();
 
   games.forEach(game => {
-    // Cover
-    const placeholder = 'data:image/svg+xml;charset=UTF-8,...';
+    // Cover-Placeholder wiederhergestellt
+    const placeholderSVG = 
+      'data:image/svg+xml;charset=UTF-8,' +
+      '%3csvg xmlns="http://www.w3.org/2000/svg" width="280" height="200" viewBox="0 0 280 200"%3e' +
+      '%3crect fill="%232a2a2a" width="100%" height="100%"/%3e' +
+      '%3ctext fill="%23666" x="50%" y="50%" dominant-baseline="middle" ' +
+      'text-anchor="middle" font-size="16" font-family="sans-serif"%3eKein Cover%3c/text%3e%3c/svg%3e';
     const coverUrl = game.cover
       ? game.cover.url.replace('t_thumb', 't_cover_big')
-      : placeholder;
+      : placeholderSVG;
 
     // Plattform-Icons
     const unique = new Set();
@@ -239,12 +238,10 @@ function displayGames(games) {
     let dateStr = 'Datum unbekannt';
     if (relDate) {
       const optsDate = { day: '2-digit', month: '2-digit', year: 'numeric' };
-      const optsTime = { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' };
-      if (isMidnightUTC(relDate)) {
-        dateStr = `Erscheint am: ${relDate.toLocaleDateString('de-DE', optsDate)}`;
-      } else {
-        dateStr = `Erscheint am: ${relDate.toLocaleString('de-DE', optsTime)} Uhr`;
-      }
+      const optsTime = { ...optsDate, hour: '2-digit', minute: '2-digit' };
+      dateStr = isMidnightUTC(relDate)
+        ? `Erscheint am: ${relDate.toLocaleDateString('de-DE', optsDate)}`
+        : `Erscheint am: ${relDate.toLocaleString('de-DE', optsTime)} Uhr`;
     }
 
     // Store-Link
@@ -254,7 +251,6 @@ function displayGames(games) {
       ? `href="${storeLink}" target="_blank" rel="noopener noreferrer"`
       : '';
 
-    // Karte bauen
     const card = document.createElement('div');
     card.classList.add('game-card');
     card.innerHTML = `
@@ -279,10 +275,8 @@ function displayGames(games) {
         <div class="countdown-timer" id="timer-${game.id}"></div>
       </div>
     `;
-
     fragment.appendChild(card);
 
-    // Countdown vorbereiten
     if (relDate && relDate > new Date()) {
       countdownElements.push({ elementId: `timer-${game.id}`, timestamp: bestTs });
     }
@@ -290,7 +284,6 @@ function displayGames(games) {
 
   gamesContainer.appendChild(fragment);
 
-  // Countdown starten, wenn noch nicht aktiv
   if (countdownIntervalId === null && countdownElements.length) {
     countdownIntervalId = setInterval(updateCountdowns, 1000);
   }
@@ -317,7 +310,6 @@ function updateCountdowns() {
     const s = Math.floor((diff % 60000) / 1000);
     el.innerHTML = `${d}T ${h}h ${m}m ${s}s`;
   }
-  // Stoppe Intervall, wenn alles durch ist
   if (countdownElements.length === 0 && countdownIntervalId !== null) {
     clearInterval(countdownIntervalId);
     countdownIntervalId = null;
@@ -336,86 +328,72 @@ function resetToUpcomingView() {
 
 function getBestReleaseTimestamp(releaseDates, fallback) {
   if (!Array.isArray(releaseDates) || !releaseDates.length) return fallback;
-  const eu = releaseDates.find(d => d.region === REGION_EUROPE);
+  const eu = releaseDates.find(d => d.region === REGION_EUROPPE);
   return eu?.date || releaseDates[0]?.date || fallback;
 }
 
 function isMidnightUTC(date) {
-  return date.getUTCHours() === 0 &&
-         date.getUTCMinutes() === 0 &&
-         date.getUTCSeconds() === 0;
+  return (
+    date.getUTCHours() === 0 &&
+    date.getUTCMinutes() === 0 &&
+    date.getUTCSeconds() === 0
+  );
 }
 
 /**
- * Ermittelt den besten Store-Link basierend auf aktiven Plattform-Filtern
- * oder fällt auf die priorisierten Stores zurück.
- *
- * @param {{ category: number, url: string }[]} websites
- * @param {Set<number>} activeFilters
- * @returns {string|null}
+ * Ermittelt den besten Store-Link basierend auf Filtern oder Fallback.
  */
 function getStoreLink(websites, activeFilters) {
   if (!Array.isArray(websites) || !websites.length) return null;
 
   const candidates = new Set();
 
-  // Spezifische Links für aktive Filter
-  if (activeFilters instanceof Set && activeFilters.size) {
+  if (activeFilters.size) {
     for (const pid of activeFilters) {
       const rule = platformStoreRules.get(pid);
       if (!rule) continue;
-      // nach Domains
-      for (const dom of rule.domains) {
+      rule.domains.forEach(dom => {
         websites.forEach(site => {
-          if (typeof site.url === 'string' && site.url.includes(dom)) {
-            candidates.add(site.url);
-          }
+          if (site.url.includes(dom)) candidates.add(site.url);
         });
-      }
-      // nach Kategorien
-      for (const cat of rule.categories) {
+      });
+      rule.categories.forEach(cat => {
         websites.forEach(site => {
-          if (site.category === cat && typeof site.url === 'string') {
-            candidates.add(site.url);
-          }
+          if (site.category === cat) candidates.add(site.url);
         });
-      }
+      });
     }
   }
 
-  // Kandidaten nach Priorität sortieren
+  // nach Priorität sortieren
   const sorted = [...candidates].sort((a, b) => {
-    // extrahiere category aus URL-Objekt
     const catA = websites.find(s => s.url === a)?.category;
     const catB = websites.find(s => s.url === b)?.category;
-    const pA = storePriority.get(catA) ?? Infinity;
-    const pB = storePriority.get(catB) ?? Infinity;
-    return pA - pB;
+    return (storePriority.get(catA) ?? Infinity) - (storePriority.get(catB) ?? Infinity);
   });
 
   if (sorted.length) {
     let link = sorted[0];
-    // Steam: Deutsch erzwingen
-    if (websites.find(s => s.url === link).category === STORE_STEAM) {
+    const cat = websites.find(s => s.url === link)?.category;
+    if (cat === STORE_STEAM) {
       try {
-        const url = new URL(link);
-        url.searchParams.set('l', 'german');
-        link = url.toString();
+        const u = new URL(link);
+        u.searchParams.set('l', 'german');
+        link = u.toString();
       } catch {}
     }
     return link;
   }
 
-  // Fallback: alle Web­sites prüfen
-  let bestLink = null;
-  let bestPrio = Infinity;
-  for (const site of websites) {
+  // Fallback
+  let bestLink = null, bestPrio = Infinity;
+  websites.forEach(site => {
     const p = storePriority.get(site.category);
     if (typeof p === 'number' && p < bestPrio) {
       bestPrio = p;
       bestLink = site.url;
     }
-  }
+  });
   return bestLink;
 }
 
@@ -450,14 +428,13 @@ window.addEventListener('load', () => {
     type:     'opt-in',
     revokable:false,
     content: {
-      message: "Wir würden gerne Cookies "
-             + "für Analyse-Zwecke verwenden.",
+      message: "Wir würden gerne Cookies für Analyse-Zwecke verwenden.",
       allow:  'Akzeptieren',
       deny:   'Ablehnen',
       link:   'Mehr erfahren',
       href:   '/datenschutz.html'
     },
-    onStatusChange(status) {
+    onStatusChange() {
       if (this.hasConsented()) loadGoogleAnalytics();
     }
   });
