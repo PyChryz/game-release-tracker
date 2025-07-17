@@ -19,8 +19,8 @@ h1 {
 /* =================================== */
 .site-header {
     display: flex;
-    flex-direction: column; /* Stapelt die Elemente untereinander */
-    align-items: center;    /* Zentriert sie horizontal */
+    flex-direction: column; 
+    align-items: center;    
     gap: 10px;
     margin-bottom: 20px;
 }
