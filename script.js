@@ -75,8 +75,8 @@ function debounce(fn, delay) {
 // ===================================
 document.addEventListener('DOMContentLoaded', () => {
   const siteLogo    = document.getElementById('site-logo-img');
-  const lightLogo   = './icon/logo-light.png';
-  const darkLogo    = './icon/logo-dark.png';
+  const lightLogo   = './icon/logo.png';
+  const darkLogo    = './icon/logo.png';
 
   toggleButton?.addEventListener('click', () => {
     document.body.classList.toggle('light-mode');
@@ -214,7 +214,7 @@ function displayGames(games) {
   const fragment = document.createDocumentFragment();
 
   games.forEach(game => {
-    // Cover-Placeholder wiederhergestellt
+    
     const placeholderSVG = 
       'data:image/svg+xml;charset=UTF-8,' +
       '%3csvg xmlns="http://www.w3.org/2000/svg" width="280" height="200" viewBox="0 0 280 200"%3e' +
