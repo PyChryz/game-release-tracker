@@ -262,22 +262,19 @@ function startCountdown(elementId, releaseTimestamp) {
 
 // Diese leere Funktion füllen wir im nächsten Schritt mit dem Google Analytics Code.
 function loadGoogleAnalytics() {
-       console.log("Nutzer hat zugestimmt. Lade Google Analytics...");
+    console.log("Nutzer hat zugestimmt. Lade Google Analytics...");
+    const measurementId = 'G-9MTCLGZVDD'; // Deine korrekte ID
 
-    const measurementId = 'G-9MTCLGZVDD'; 
-
-    // Verhindert, dass das Skript mehrfach geladen wird
     if (window.gtag) {
+        console.log("Google Analytics wurde bereits geladen.");
         return;
     }
 
-    // Das erste Google Analytics Skript-Tag erstellen und einfügen
     const script1 = document.createElement('script');
     script1.async = true;
     script1.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
     document.head.appendChild(script1);
 
-    // Das zweite Skript-Tag mit der Initialisierung erstellen
     const script2 = document.createElement('script');
     script2.innerHTML = `
         window.dataLayer = window.dataLayer || [];
@@ -288,8 +285,6 @@ function loadGoogleAnalytics() {
     document.head.appendChild(script2);
 }
 
-
-// Initialisiert den Consent-Banner, sobald die Seite geladen ist
 window.addEventListener("load", function(){
     window.cookieconsent.initialise({
       "palette": {
@@ -298,17 +293,21 @@ window.addEventListener("load", function(){
       },
       "theme": "classic",
       "position": "bottom",
-      "type": "opt-in", // Wichtig: Der Nutzer muss aktiv zustimmen
+      "type": "opt-in",
       "content": {
-        "message": "Diese Webseite verwendet Cookies zur Analyse, um die Nutzererfahrung zu verbessern. Stimmst du dem zu?",
+        "message": "Wir würden gerne Cookies für Analyse-Zwecke verwenden, um die Webseite zu verbessern. Stimmst du dem zu?",
         "allow": "Akzeptieren",
         "deny": "Ablehnen",
         "link": "Mehr erfahren",
         "href": "/datenschutz.html"
       },
-      // Diese Funktion wird NUR ausgeführt, wenn der Nutzer auf "Akzeptieren" klickt
-      onAccept: function() {
-        loadGoogleAnalytics();
+      // --- KORRIGIERTER TEIL ---
+      // Diese Funktion wird jedes Mal ausgeführt, wenn sich der Status ändert ODER
+      // beim Seitenaufruf, wenn bereits eine Zustimmung vorliegt.
+      onStatusChange: function(status) {
+        if (this.hasConsented()) {
+          loadGoogleAnalytics();
+        }
       }
     })
 });
