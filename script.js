@@ -41,7 +41,7 @@ const platformStoreRules = new Map([
     [167, { type: 'domain', domains: ['store.playstation.com'] }],
     [49, { type: 'domain', domains: ['xbox.com', 'microsoft.com'] }],
     [169, { type: 'domain', domains: ['xbox.com', 'microsoft.com'] }],
-    [130, { type: 'domain', domains: ['nintendo.com'] }]
+    [130, { type: 'domain', domains: ['nintendo'] }] // Geändert, um alle Nintendo-Domains zu erfassen
 ]);
 
 
@@ -202,7 +202,7 @@ function displayGames(games) {
                 : `Erscheint am: ${relDate.toLocaleString('de-DE', optsTime)} Uhr`;
         }
 
-        const storeLink = getStoreLink(game.websites, appState.platformFilters);
+        const storeLink = getStoreLink(game); // Geändert: Übergebe das ganze Spielobjekt
         const wrapperTag = storeLink ? 'a' : 'div';
         const wrapperAttrs = storeLink ? `href="${storeLink}" target="_blank" rel="noopener noreferrer"` : '';
 
@@ -283,8 +283,14 @@ function isMidnightUTC(date) {
     return date.getUTCHours() === 0 && date.getUTCMinutes() === 0 && date.getUTCSeconds() === 0;
 }
 
-function localizeUrl(urlString) {
+function localizeUrl(urlString, gameName) {
     if (!urlString) return null;
+
+    // NEU: Nintendo-Logik
+    if (urlString.includes('nintendo.com')) {
+        const encodedGameName = encodeURIComponent(gameName);
+        return `https://www.nintendo.de/Suche/Suche-299117.html?q=${encodedGameName}`;
+    }
 
     // Steam: Fügt den Sprachparameter hinzu
     if (urlString.includes('store.steampowered.com')) {
@@ -303,21 +309,19 @@ function localizeUrl(urlString) {
         return urlString.replace(localePattern, '/de-de/');
     }
 
-    // Nintendo: Ändert die Domain von .com auf .de
-    if (urlString.includes('www.nintendo.com')) {
-        return urlString.replace('www.nintendo.com', 'www.nintendo.de');
-    }
-
     // Fallback: Gibt die originale URL zurück, wenn keine Regel zutrifft
     return urlString;
 }
 
-function getStoreLink(websites, activeFilters) {
+function getStoreLink(game) {
+    const { websites, name, platforms } = game;
+    const activeFilters = appState.platformFilters;
+    
     if (!Array.isArray(websites) || !websites.length) return null;
 
     const findByDomain = (domain) => websites.find(site => site.url.includes(domain));
     const findByCategory = (catId) => websites.find(site => site.category === catId);
-
+    
     // Priorisiere Links basierend auf aktiven Filtern
     if (activeFilters instanceof Set && activeFilters.size > 0) {
         for (const platformId of activeFilters) {
@@ -326,12 +330,12 @@ function getStoreLink(websites, activeFilters) {
             if (rule.type === 'domain') {
                 for (const domain of rule.domains) {
                     const site = findByDomain(domain);
-                    if (site) return localizeUrl(site.url); // Direkt lokalisieren und zurückgeben
+                    if (site) return localizeUrl(site.url, name);
                 }
             } else if (rule.type === 'category') {
                 for (const categoryId of rule.ids) {
                     const site = findByCategory(categoryId);
-                    if (site) return localizeUrl(site.url); // Direkt lokalisieren und zurückgeben
+                    if (site) return localizeUrl(site.url, name);
                 }
             }
         }
@@ -348,8 +352,9 @@ function getStoreLink(websites, activeFilters) {
         }
     }
 
-    return localizeUrl(bestLink); // Den besten gefundenen Link lokalisieren
+    return localizeUrl(bestLink, name);
 }
+
 
 // ===================================
 // EXTERNE DIENSTE
