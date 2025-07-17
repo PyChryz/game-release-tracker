@@ -44,6 +44,34 @@ const platformStoreRules = new Map([
   [130, { categories: [], domains: ['nintendo.com'] }]
 ]);
 
+const localeTransformMap = new Map([
+  // Steam: ?l=german
+  [STORE_STEAM, urlStr => {
+    const url = new URL(urlStr);
+    url.searchParams.set('l', 'german');
+    return url.toString();
+  }],
+  // PlayStation Store: …/de-DE/…
+  ['store.playstation.com', urlStr =>
+    urlStr.replace(
+      'store.playstation.com/',
+      'store.playstation.com/de-DE/'
+    )
+  ],
+  // Xbox/Microsoft: ?market=de-DE
+  ['xbox.com', urlStr => {
+    const url = new URL(urlStr);
+    url.searchParams.set('market', 'de-DE');
+    return url.toString();
+  }],
+  // Nintendo eShop: ?lang=de
+  ['nintendo.com', urlStr => {
+    const url = new URL(urlStr);
+    url.searchParams.set('lang', 'de');
+    return url.toString();
+  }]
+]);
+
 // ===================================
 // DOM-ELEMENTE
 // ===================================
@@ -344,57 +372,71 @@ function isMidnightUTC(date) {
  * Ermittelt den besten Store-Link basierend auf Filtern oder Fallback.
  */
 function getStoreLink(websites, activeFilters) {
-  if (!Array.isArray(websites) || !websites.length) return null;
+  if (!Array.isArray(websites) || websites.length === 0) return null;
 
   const candidates = new Set();
 
-  if (activeFilters.size) {
-    for (const pid of activeFilters) {
-      const rule = platformStoreRules.get(pid);
-      if (!rule) continue;
-      rule.domains.forEach(dom => {
-        websites.forEach(site => {
-          if (site.url.includes(dom)) candidates.add(site.url);
-        });
-      });
-      rule.categories.forEach(cat => {
-        websites.forEach(site => {
-          if (site.category === cat) candidates.add(site.url);
-        });
-      });
-    }
+  // 1) Spezifische Links anhand der Plattform-Filter
+  for (const pid of activeFilters) {
+    const rule = platformStoreRules.get(pid);
+    if (!rule) continue;
+
+    rule.domains.forEach(dom =>
+      websites.forEach(site => {
+        if (site.url.includes(dom)) candidates.add(site.url);
+      })
+    );
+    rule.categories.forEach(cat =>
+      websites.forEach(site => {
+        if (site.category === cat) candidates.add(site.url);
+      })
+    );
   }
 
-  // nach Priorität sortieren
-  const sorted = [...candidates].sort((a, b) => {
+  // 2) Kandidaten nach deiner storePriority sortieren
+  const sortedCandidates = [...candidates].sort((a, b) => {
     const catA = websites.find(s => s.url === a)?.category;
     const catB = websites.find(s => s.url === b)?.category;
     return (storePriority.get(catA) ?? Infinity) - (storePriority.get(catB) ?? Infinity);
   });
 
-  if (sorted.length) {
-    let link = sorted[0];
-    const cat = websites.find(s => s.url === link)?.category;
-    if (cat === STORE_STEAM) {
-      try {
-        const u = new URL(link);
-        u.searchParams.set('l', 'german');
-        link = u.toString();
-      } catch {}
+  // 3) Fallback, wenn keine Kandidaten gefunden wurden
+  let bestFallback = null;
+  let bestPrio = Infinity;
+  if (sortedCandidates.length === 0) {
+    for (const site of websites) {
+      const prio = storePriority.get(site.category);
+      if (prio != null && prio < bestPrio) {
+        bestPrio = prio;
+        bestFallback = site.url;
+      }
     }
-    return link;
   }
 
-  // Fallback
-  let bestLink = null, bestPrio = Infinity;
-  websites.forEach(site => {
-    const p = storePriority.get(site.category);
-    if (typeof p === 'number' && p < bestPrio) {
-      bestPrio = p;
-      bestLink = site.url;
+  // 4) Die tatsächlich gewählte URL (erst Kandidaten, dann Fallback)
+  const chosenUrl = sortedCandidates.length ? sortedCandidates[0] : bestFallback;
+  if (!chosenUrl) return null;
+
+  // 5) Locale-Transformation (einmaliges Anwenden, ohne link neu zu deklarieren)
+  let finalUrl = chosenUrl;
+
+  // 5a) Versuch kategorienspezifisches Mapping
+  const siteObj = websites.find(s => s.url === chosenUrl);
+  const transformByCat = localeTransformMap.get(siteObj?.category);
+  if (transformByCat) {
+    finalUrl = transformByCat(finalUrl);
+    return finalUrl;
+  }
+
+  // 5b) Fallback auf Domain-Mapping
+  for (const [key, transformFn] of localeTransformMap) {
+    if (typeof key === 'string' && finalUrl.includes(key)) {
+      finalUrl = transformFn(finalUrl);
+      break;
     }
-  });
-  return bestLink;
+  }
+
+  return finalUrl;
 }
 
 // ===================================
