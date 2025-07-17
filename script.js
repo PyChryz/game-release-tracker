@@ -283,12 +283,42 @@ function isMidnightUTC(date) {
     return date.getUTCHours() === 0 && date.getUTCMinutes() === 0 && date.getUTCSeconds() === 0;
 }
 
+function localizeUrl(urlString) {
+    if (!urlString) return null;
+
+    // Steam: Fügt den Sprachparameter hinzu
+    if (urlString.includes('store.steampowered.com')) {
+        try {
+            const url = new URL(urlString);
+            url.searchParams.set('l', 'german');
+            return url.toString();
+        } catch (e) {
+            return urlString; // Fallback
+        }
+    }
+
+    // PlayStation & Xbox: Ersetzt Ländercode im Pfad (z.B. /en-us/ -> /de-de/)
+    const localePattern = /\/en-[a-zA-Z]{2}\//;
+    if (localePattern.test(urlString)) {
+        return urlString.replace(localePattern, '/de-de/');
+    }
+
+    // Nintendo: Ändert die Domain von .com auf .de
+    if (urlString.includes('www.nintendo.com')) {
+        return urlString.replace('www.nintendo.com', 'www.nintendo.de');
+    }
+
+    // Fallback: Gibt die originale URL zurück, wenn keine Regel zutrifft
+    return urlString;
+}
+
 function getStoreLink(websites, activeFilters) {
     if (!Array.isArray(websites) || !websites.length) return null;
 
     const findByDomain = (domain) => websites.find(site => site.url.includes(domain));
     const findByCategory = (catId) => websites.find(site => site.category === catId);
 
+    // Priorisiere Links basierend auf aktiven Filtern
     if (activeFilters instanceof Set && activeFilters.size > 0) {
         for (const platformId of activeFilters) {
             const rule = platformStoreRules.get(platformId);
@@ -296,17 +326,18 @@ function getStoreLink(websites, activeFilters) {
             if (rule.type === 'domain') {
                 for (const domain of rule.domains) {
                     const site = findByDomain(domain);
-                    if (site) return site.url;
+                    if (site) return localizeUrl(site.url); // Direkt lokalisieren und zurückgeben
                 }
             } else if (rule.type === 'category') {
                 for (const categoryId of rule.ids) {
                     const site = findByCategory(categoryId);
-                    if (site) return site.url;
+                    if (site) return localizeUrl(site.url); // Direkt lokalisieren und zurückgeben
                 }
             }
         }
     }
 
+    // Fallback: Finde den besten Link basierend auf der Priorität
     let bestLink = null;
     let bestPriority = Infinity;
     for (const site of websites) {
@@ -317,14 +348,7 @@ function getStoreLink(websites, activeFilters) {
         }
     }
 
-    if (bestPriority === 1 && bestLink) {
-        try {
-            const url = new URL(bestLink);
-            url.searchParams.set('l', 'german');
-            return url.toString();
-        } catch (e) { return bestLink; }
-    }
-    return bestLink;
+    return localizeUrl(bestLink); // Den besten gefundenen Link lokalisieren
 }
 
 // ===================================
