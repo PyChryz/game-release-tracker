@@ -10,13 +10,6 @@ const countdownElements = [];
 let countdownStarted = false;
 let activePlatformFilters = new Set();
 
-// Konstanten für Regionen und Stores
-const REGION_EUROPE = 2;
-const STORE_STEAM = 13;
-const STORE_EPIC = 16;
-const STORE_GOG = 17;
-const STORE_OFFICIAL = 1;
-
 // Konstanten für Plattform-Icons
 const platformIconMap = {
     6: '<i class="fa-brands fa-windows"></i>',       // PC
@@ -27,6 +20,25 @@ const platformIconMap = {
     130: '<i class="fas fa-gamepad"></i>'             // Nintendo Switch
 };
 
+// Map für Plattformen zu Stores und Domains
+const platformToStoreMap = new Map([
+    // PC -> Hier bleiben die Kategorie-IDs, da sie zuverlässig sind.
+    [6, { type: 'category', ids: [13, 16, 17] }], 
+    // Konsolen -> Hier suchen wir nach Text in der URL.
+    [48,  { type: 'domain', domains: ['store.playstation.com'] }], // PS4
+    [167, { type: 'domain', domains: ['store.playstation.com'] }], // PS5
+    [49,  { type: 'domain', domains: ['xbox.com', 'microsoft.com'] }], // Xbox One
+    [169, { type: 'domain', domains: ['xbox.com', 'microsoft.com'] }], // Xbox Series X|S
+    [130, { type: 'domain', domains: ['nintendo.com'] }] // Switch
+]);
+
+// Fallback-Priorität für Stores, wenn kein Filter aktiv ist
+const storePriority = new Map([
+    [13, 1], // Steam
+    [16, 2], // Epic
+    [17, 3], // GOG
+    [1,  4]  // Official
+]);
 
 // ===================================
 // DOM-ELEMENTE
@@ -44,38 +56,24 @@ const loader = document.getElementById('loader');
 // HAUPTLOGIK & EVENT LISTENERS
 // ===================================
 document.addEventListener('DOMContentLoaded', () => {
-    // Referenzen zu den DOM-Elementen holen
-    const siteLogo = document.getElementById('site-logo-img'); 
-    const lightLogoSrc = './icon/logo.png'; // Pfad zum hellen Logo
-    const darkLogoSrc = './icon/logo.png'; // Pfad zum dunklen Logo
+    const siteLogo = document.getElementById('site-logo-img');
+    const lightLogoSrc = './icon/logo.png';
+    const darkLogoSrc = './icon/logo-dark.png'; // Stelle sicher, dass du ein dunkles Logo hast
 
-    // Theme-Toggle
     toggleButton?.addEventListener('click', () => {
         document.body.classList.toggle('light-mode');
-
-        // Logo-Quelle basierend auf dem Theme ändern
-        if (document.body.classList.contains('light-mode')) {
-            siteLogo.src = darkLogoSrc;
-        } else {
-            siteLogo.src = lightLogoSrc;
-        }
+        siteLogo.src = document.body.classList.contains('light-mode') ? darkLogoSrc : lightLogoSrc;
     });
 
-    // Enter-Taste im Suchfeld abfangen
     searchForm.addEventListener('submit', (event) => event.preventDefault());
 
-    // Titel-Klick zum Zurücksetzen
     mainTitle.addEventListener('click', () => {
-        if (currentView !== 'upcoming') {
-            resetToUpcomingView();
-        }
+        if (currentView !== 'upcoming') resetToUpcomingView();
     });
 
-    // Live-Suche
     searchInput.addEventListener('input', () => {
         clearTimeout(debounceTimer);
         const query = searchInput.value.trim();
-
         debounceTimer = setTimeout(() => {
             gameOffset = 0;
             if (query) {
@@ -88,7 +86,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 400);
     });
 
-    // "Mehr laden"-Button
     loadMoreButton.addEventListener('click', () => {
         gameOffset += gamesPerLoad;
         if (currentView === 'upcoming') {
@@ -98,14 +95,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Plattform-Filter
     platformFilterContainer?.addEventListener('change', () => {
         activePlatformFilters.clear();
         const checkboxes = platformFilterContainer.querySelectorAll('input[type=checkbox]:checked');
-        checkboxes.forEach(cb => {
-            activePlatformFilters.add(parseInt(cb.value));
-        });
-
+        checkboxes.forEach(cb => activePlatformFilters.add(parseInt(cb.value)));
         gameOffset = 0;
         if (currentView === 'search' && currentSearchQuery) {
             fetchSearchResults(currentSearchQuery, gameOffset, activePlatformFilters);
@@ -114,7 +107,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Initiale Liste laden
     fetchUpcomingGames(gameOffset, activePlatformFilters);
 });
 
@@ -126,9 +118,9 @@ function fetchGames(body, isSearch = false, query = '') {
 
     if (gameOffset === 0) {
         gamesContainer.innerHTML = '';
-        loader.style.display = 'block';
+        if(loader) loader.style.display = 'block';
     }
-    loadMoreButton.style.display = 'none';
+    if(loadMoreButton) loadMoreButton.style.display = 'none';
 
     fetch(apiUrl, { method: 'POST', body: body })
         .then(response => {
@@ -136,7 +128,7 @@ function fetchGames(body, isSearch = false, query = '') {
             return response.json();
         })
         .then(games => {
-            loader.style.display = 'none';
+            if(loader) loader.style.display = 'none';
 
             if (isSearch && games.length === 0 && gameOffset === 0) {
                 gamesContainer.innerHTML = `<p class="info-text">Keine kommenden Spiele für "${query}" gefunden.</p>`;
@@ -145,14 +137,14 @@ function fetchGames(body, isSearch = false, query = '') {
             displayGames(games);
 
             if (games.length < gamesPerLoad) {
-                loadMoreButton.style.display = 'none';
+                if(loadMoreButton) loadMoreButton.style.display = 'none';
             } else {
-                loadMoreButton.style.display = 'inline-block';
+                if(loadMoreButton) loadMoreButton.style.display = 'inline-block';
             }
         })
         .catch(error => {
             console.error('Fehler bei der API-Anfrage:', error);
-            loader.style.display = 'none';
+            if(loader) loader.style.display = 'none';
             gamesContainer.innerHTML = `<p class="info-text">Ein Fehler ist aufgetreten.</p>`;
         });
 }
@@ -192,7 +184,6 @@ function fetchSearchResults(query, offset, platformIds = new Set()) {
 // DARSTELLUNGS-FUNKTIONEN
 // ===================================
 function displayGames(games) {
-    // Bei einer neuen Anzeige (erste Seite), das Countdown-Array leeren
     if (gameOffset === 0) {
         countdownElements.length = 0;
     }
@@ -266,21 +257,17 @@ function displayGames(games) {
 function startGlobalCountdown() {
     setInterval(() => {
         const now = Date.now();
-        // Wir iterieren rückwärts, um Elemente sicher entfernen zu können
         for (let i = countdownElements.length - 1; i >= 0; i--) {
             const { elementId, timestamp } = countdownElements[i];
             const el = document.getElementById(elementId);
-
             if (!el) {
-                // Element ist nicht mehr im DOM, entferne es aus dem Array
                 countdownElements.splice(i, 1);
                 continue;
             }
-
             const diff = timestamp * 1000 - now;
             if (diff < 0) {
                 el.innerHTML = "🎉 Veröffentlicht!";
-                continue; // Nächstes Element in der Schleife
+                continue;
             }
             const d = Math.floor(diff / (1000 * 60 * 60 * 24));
             const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
@@ -312,92 +299,48 @@ function isMidnightUTC(date) {
 }
 
 function getStoreLink(websites, activeFilters) {
-    if (!websites || websites.length === 0) return null;
+    if (!Array.isArray(websites) || websites.length === 0) return null;
 
-    // --- Kategorie-Definitionen ---
-    const STORE_OFFICIAL = 1;
-    const STORE_STEAM = 13;
-    const STORE_XBOX = 14;
-    const STORE_PLAYSTATION = 15;
-    const STORE_EPIC = 16;
-    const STORE_GOG = 17;
-    const STORE_NINTENDO = 18;
+    const findByDomain = (domain) => websites.find(site => site.url.includes(domain));
+    const findByCategory = (catId) => websites.find(site => site.category === catId);
 
-    // --- Hilfsfunktionen ---
-    // Sucht einen Link für eine Kategorie
-    const findLink = (categoryId) => {
-        const site = websites.find(s => s.category === categoryId);
-        return site ? site.url : null;
-    };
-    
-    // Holt den Steam-Link und fügt den deutschen Sprachparameter hinzu
-    const getSteamLink = () => {
-        const link = findLink(STORE_STEAM);
-        if (link) {
-            try {
-                const url = new URL(link);
-                url.searchParams.set('l', 'german');
-                return url.toString();
-            } catch {
-                return link; // Fallback, falls die URL ungültig ist
+    if (activeFilters instanceof Set && activeFilters.size > 0) {
+        for (const platformId of activeFilters) {
+            const rule = platformToStoreMap.get(platformId);
+            if (!rule) continue;
+
+            if (rule.type === 'domain') {
+                for (const domain of rule.domains) {
+                    const site = findByDomain(domain);
+                    if (site) return site.url;
+                }
+            } else if (rule.type === 'category') {
+                for (const categoryId of rule.ids) {
+                    const site = findByCategory(categoryId);
+                    if (site) return site.url;
+                }
             }
         }
-        return null;
-    };
-
-    // --- LOGIK FÜR AKTIVE FILTER ---
-    // Wenn Filter aktiv sind, wird NUR nach den passenden Stores gesucht.
-    if (activeFilters.size > 0) {
-        let link = null;
-        // Die Reihenfolge der 'if'-Blöcke bestimmt die Priorität, wenn mehrere Filter aktiv sind.
-        
-        // Priorität 1: PlayStation
-        if (activeFilters.has(167) || activeFilters.has(48)) {
-            link = findLink(STORE_PLAYSTATION);
-            if (link) return link;
-        }
-        // Priorität 2: Xbox
-        if (activeFilters.has(169) || activeFilters.has(49)) {
-            link = findLink(STORE_XBOX);
-            if (link) return link;
-        }
-        // Priorität 3: Nintendo
-        if (activeFilters.has(130)) {
-            link = findLink(STORE_NINTENDO);
-            if (link) return link;
-        }
-        // Priorität 4: PC
-        if (activeFilters.has(6)) {
-            // Suche in der Reihenfolge: Steam, dann Epic, dann GOG
-            link = getSteamLink() || findLink(STORE_EPIC) || findLink(STORE_GOG);
-            if (link) return link;
-        }
-
-        // SEHR WICHTIG: Wenn nach der Prüfung aller aktiven Filter kein Link gefunden wurde,
-        // gib NULL zurück. Dies verhindert das Durchfallen zur Fallback-Logik.
-        return null;
     }
 
-    // --- FALLBACK-LOGIK (NUR WENN KEINE FILTER AKTIV SIND) ---
-    // Suche zuerst nach allen wichtigen Store-Links in einer klaren Priorität.
-    const unfilteredStoreLink = getSteamLink() ||
-                              findLink(STORE_PLAYSTATION) ||
-                              findLink(STORE_XBOX) ||
-                              findLink(STORE_NINTENDO) ||
-                              findLink(STORE_EPIC) ||
-                              findLink(STORE_GOG);
-
-    if (unfilteredStoreLink) {
-        return unfilteredStoreLink;
+    let bestLink = null;
+    let bestPriority = Infinity;
+    for (const site of websites) {
+        const prio = storePriority.get(site.category);
+        if (typeof prio === 'number' && prio < bestPriority) {
+            bestPriority = prio;
+            bestLink = site.url;
+        }
     }
     
-    // ALLERLETZTE OPTION: Nimm die offizielle Webseite, ABER nur, wenn es nicht Reddit ist.
-    const officialLink = findLink(STORE_OFFICIAL);
-    if (officialLink && !officialLink.includes('reddit.com')) {
-        return officialLink;
+    if (bestPriority === 1 && bestLink) { // Priorität 1 ist Steam
+        try {
+            const url = new URL(bestLink);
+            url.searchParams.set('l', 'german');
+            return url.toString();
+        } catch (e) { return bestLink; }
     }
-
-    return null; // Absolut nichts Passendes gefunden.
+    return bestLink;
 }
 
 // ===================================
