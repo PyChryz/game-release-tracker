@@ -13,6 +13,17 @@ const appState = {
     isTodayFilterActive: false
 };
 
+// Konfiguration für Plattform-Filter
+const platforms = [
+    { id: 6, name: 'PC' },
+    { id: 169, name: 'Xbox Series X|S' },
+    { id: 49, name: 'Xbox One' },
+    { id: 167, name: 'PlayStation 5' },
+    { id: 48, name: 'PlayStation 4' },
+    { id: 130, name: 'Switch' },
+    { id: 390, name: 'Switch 2' }
+];
+
 // Konstanten für die API
 const REGION_EUROPE = 2;
 const STORE_STEAM = 13;
@@ -72,6 +83,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const platformFilterContainer = document.getElementById('platform-filter');
     const todayFilterBtn = document.getElementById('today-filter-btn');
 
+    populatePlatformFilters(); // NEU: Filter dynamisch erzeugen
+
     toggleButton?.addEventListener('click', () => {
         document.body.classList.toggle('light-mode');
     });
@@ -117,22 +130,40 @@ function fetchAndDisplayGames() {
 }
 
 // ===================================
+// DYNAMISCHE UI-ELEMENTE
+// ===================================
+function populatePlatformFilters() {
+    const container = document.getElementById('platform-filter');
+    if (!container) return;
+
+    const fragment = document.createDocumentFragment();
+    platforms.forEach(platform => {
+        const label = document.createElement('label');
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = platform.id;
+        
+        label.appendChild(checkbox);
+        label.appendChild(document.createTextNode(` ${platform.name}`));
+        fragment.appendChild(label);
+    });
+    container.appendChild(fragment);
+}
+
+
+// ===================================
 // API-FUNKTIONEN
 // ===================================
 function fetchGamesFromAPI(offset, query = '', platformIds = new Set(), isTodayFilter) {
     const conditions = [];
     const sort = 'sort first_release_date asc;';
 
-    // Die API-Anfrage wird vereinfacht, die präzise Logik folgt im Client
     const hasPlatformFilter = platformIds.size > 0;
 
     if (isTodayFilter) {
         const now = new Date();
-        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
         const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-        const startTs = Math.floor(startOfDay.getTime() / 1000);
         const endTs = Math.floor(endOfDay.getTime() / 1000);
-        // Wir nehmen hier einen breiten Datumsfilter, um nichts zu verpassen
         conditions.push(`(first_release_date <= ${endTs})`);
     } else {
         const nowUnix = Math.floor(Date.now() / 1000);
@@ -144,7 +175,6 @@ function fetchGamesFromAPI(offset, query = '', platformIds = new Set(), isTodayF
     }
     
     if (hasPlatformFilter) {
-        // Filtert auf der API-Ebene nur grob nach Plattform
         conditions.push(`(platforms = (${[...platformIds].join(',')}))`);
     }
 
@@ -179,7 +209,10 @@ function executeFetch(body, query = '', isTodayFilter = false) {
             return res.json();
         })
         .then(games => {
-            // *** NEU: Client-seitige Filterung für präzise Ergebnisse ***
+            // HINWEIS: Die API liefert oft breite Ergebnisse (z.B. ein Spiel, das auf irgendeiner
+            // der gefilterten Plattformen erscheint). Das nachfolgende client-seitige Filtern
+            // ist notwendig, um die Ergebnisse exakt auf die Auswahl des Nutzers (Datum & Plattform)
+            // einzugrenzen. Ein Backend-Proxy könnte dies effizienter lösen.
             let filteredGames = games;
             const { platformFilters, isTodayFilterActive } = appState;
 
@@ -188,12 +221,9 @@ function executeFetch(body, query = '', isTodayFilter = false) {
                     if (!game.release_dates) return false;
 
                     return game.release_dates.some(rd => {
-                        let platformMatch = true; // Standardmäßig wahr
-                        if (platformFilters.size > 0) {
-                            platformMatch = platformFilters.has(rd.platform);
-                        }
+                        let platformMatch = !platformFilters.size || platformFilters.has(rd.platform);
 
-                        let dateMatch = true; // Standardmäßig wahr
+                        let dateMatch = true;
                         if (isTodayFilterActive) {
                             const now = new Date();
                             const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
@@ -346,6 +376,8 @@ function updateCountdowns() {
 function resetToUpcomingView() {
     const searchInput = document.getElementById('search-input');
     const todayFilterBtn = document.getElementById('today-filter-btn');
+    const platformCheckboxes = document.querySelectorAll('#platform-filter input[type=checkbox]');
+
     searchInput.value = '';
     
     appState.isTodayFilterActive = false;
@@ -353,6 +385,9 @@ function resetToUpcomingView() {
     
     appState.searchQuery = '';
     appState.offset = 0;
+    appState.platformFilters.clear();
+    platformCheckboxes.forEach(cb => cb.checked = false);
+
     fetchAndDisplayGames();
 }
 
@@ -458,7 +493,7 @@ window.addEventListener('load', () => {
         theme: 'classic',
         position: 'bottom',
         type: 'opt-in',
-        revokable: false,
+        revokable: true, // GEÄNDERT: Widerruf ist jetzt möglich
         content: {
             message: "Wir würden gerne Cookies für Analyse-Zwecke verwenden.",
             allow: 'Akzeptieren',
