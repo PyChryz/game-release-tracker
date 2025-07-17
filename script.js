@@ -27,18 +27,6 @@ const platformIconMap = {
     130: '<i class="fas fa-gamepad"></i>'             // Nintendo Switch
 };
 
-const platformToStoreMap = {
-    // PC -> Steam, Epic, GOG
-    6: [13, 16, 17],
-    // PlayStation -> PlayStation Store
-    48: [19], // PS4
-    167: [19], // PS5
-    // Xbox -> Microsoft Store
-    49: [20], // Xbox One
-    169: [20], // Xbox Series X|S
-    // Nintendo -> Nintendo eShop
-    130: [21] // Switch
-};
 
 // ===================================
 // DOM-ELEMENTE
@@ -326,23 +314,39 @@ function isMidnightUTC(date) {
 function getStoreLink(websites, activeFilters) {
     if (!websites || websites.length === 0) return null;
 
+    // Helper-Funktion, um eine URL anhand eines Domain-Namens zu finden
+    const findByDomain = (domain) => websites.find(site => site.url.includes(domain));
+
     // Wenn Filter aktiv sind, suche gezielt nach dem passenden Store
     if (activeFilters.size > 0) {
-        // Sammle alle gewünschten Store-Kategorien basierend auf den aktiven Filtern
-        const targetStoreCategories = [...activeFilters].flatMap(platformId => platformToStoreMap[platformId] || []);
-
-        if (targetStoreCategories.length > 0) {
-            // Finde den ersten Link, der zu einer der Ziel-Kategorien passt
-            for (const categoryId of targetStoreCategories) {
-                const specificStoreLink = websites.find(site => site.category === categoryId);
-                if (specificStoreLink) {
-                    return specificStoreLink.url; // Gib den spezifischen Store-Link zurück.
-                }
-            }
+        // Prüfe auf PlayStation (IDs 167, 48)
+        if (activeFilters.has(167) || activeFilters.has(48)) {
+            const psStore = findByDomain('store.playstation.com');
+            if (psStore) return psStore.url;
+        }
+        // Prüfe auf Xbox (IDs 169, 49)
+        if (activeFilters.has(169) || activeFilters.has(49)) {
+            const xboxStore = findByDomain('xbox.com'); // xbox.com deckt auch den Microsoft Store ab
+            if (xboxStore) return xboxStore.url;
+        }
+        // Prüfe auf Nintendo Switch (ID 130)
+        if (activeFilters.has(130)) {
+            const nintendoStore = findByDomain('nintendo.com');
+            if (nintendoStore) return nintendoStore.url;
+        }
+        // Prüfe auf PC (ID 6). Hier sind die Kategorie-IDs zuverlässig.
+        if (activeFilters.has(6)) {
+            const steamLink = websites.find(site => site.category === STORE_STEAM);
+            if (steamLink) return steamLink.url;
+            const epicLink = websites.find(site => site.category === STORE_EPIC);
+            if (epicLink) return epicLink.url;
+            const gogLink = websites.find(site => site.category === STORE_GOG);
+            if (gogLink) return gogLink.url;
         }
     }
 
-    // FALLBACK-LOGIK: Wenn kein Filter aktiv ist oder kein spezifischer Store gefunden wurde
+    // FALLBACK-LOGIK: Wenn kein Filter aktiv ist oder kein spezifischer Store gefunden wurde,
+    // nimm den wichtigsten verfügbaren Link.
     const storePriority = {
         [STORE_STEAM]: 1,
         [STORE_EPIC]: 2,
