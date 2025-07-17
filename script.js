@@ -34,7 +34,7 @@ const platformIconMap = {
     48: '<i class="fa-brands fa-playstation"></i>',
     167: '<i class="fa-brands fa-playstation"></i>',
     130: '<i class="fas fa-gamepad"></i>',
-    390: '<i class="fas fa-gamepad"></i>' // NEU: Icon für Switch 2
+    390: '<i class="fas fa-gamepad"></i>'
 };
 
 const platformStoreRules = new Map([
@@ -44,7 +44,7 @@ const platformStoreRules = new Map([
     [49, { type: 'domain', domains: ['xbox.com', 'microsoft.com'] }],
     [169, { type: 'domain', domains: ['xbox.com', 'microsoft.com'] }],
     [130, { type: 'domain', domains: ['nintendo'] }],
-    [390, { type: 'domain', domains: ['nintendo'] }] // NEU: Store-Regel für Switch 2
+    [390, { type: 'domain', domains: ['nintendo'] }]
 ]);
 
 
@@ -121,44 +121,31 @@ function fetchAndDisplayGames() {
 // ===================================
 function fetchGamesFromAPI(offset, query = '', platformIds = new Set(), isTodayFilter) {
     const conditions = [];
-    let sort = 'sort first_release_date asc;';
+    const sort = 'sort first_release_date asc;';
 
+    // Die API-Anfrage wird vereinfacht, die präzise Logik folgt im Client
     const hasPlatformFilter = platformIds.size > 0;
 
-    if (hasPlatformFilter) {
-        const platformList = [...platformIds].join(',');
-        let dateClause;
-
-        if (isTodayFilter) {
-            const now = new Date();
-            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-            const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-            const startTs = Math.floor(startOfDay.getTime() / 1000);
-            const endTs = Math.floor(endOfDay.getTime() / 1000);
-            dateClause = `date >= ${startTs} & date <= ${endTs}`;
-        } else {
-            const nowUnix = Math.floor(Date.now() / 1000);
-            dateClause = `date > ${nowUnix}`;
-        }
-        
-        conditions.push(`(release_dates = {* where ${dateClause} & platform = (${platformList}) *})`);
-        
+    if (isTodayFilter) {
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+        const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+        const startTs = Math.floor(startOfDay.getTime() / 1000);
+        const endTs = Math.floor(endOfDay.getTime() / 1000);
+        // Wir nehmen hier einen breiten Datumsfilter, um nichts zu verpassen
+        conditions.push(`(first_release_date <= ${endTs})`);
     } else {
-        if (isTodayFilter) {
-            const now = new Date();
-            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-            const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-            const startTs = Math.floor(startOfDay.getTime() / 1000);
-            const endTs = Math.floor(endOfDay.getTime() / 1000);
-            conditions.push(`(first_release_date >= ${startTs} & first_release_date <= ${endTs})`);
-        } else {
-            const nowUnix = Math.floor(Date.now() / 1000);
-            conditions.push(`(first_release_date > ${nowUnix})`);
-        }
+        const nowUnix = Math.floor(Date.now() / 1000);
+        conditions.push(`(first_release_date > ${nowUnix})`);
     }
 
     if (query) {
         conditions.push(`(name ~ *"${query}"*)`);
+    }
+    
+    if (hasPlatformFilter) {
+        // Filtert auf der API-Ebene nur grob nach Plattform
+        conditions.push(`(platforms = (${[...platformIds].join(',')}))`);
     }
 
     const whereClause = conditions.join(' & ');
@@ -192,8 +179,40 @@ function executeFetch(body, query = '', isTodayFilter = false) {
             return res.json();
         })
         .then(games => {
+            // *** NEU: Client-seitige Filterung für präzise Ergebnisse ***
+            let filteredGames = games;
+            const { platformFilters, isTodayFilterActive } = appState;
+
+            if (platformFilters.size > 0 || isTodayFilterActive) {
+                filteredGames = games.filter(game => {
+                    if (!game.release_dates) return false;
+
+                    return game.release_dates.some(rd => {
+                        let platformMatch = true; // Standardmäßig wahr
+                        if (platformFilters.size > 0) {
+                            platformMatch = platformFilters.has(rd.platform);
+                        }
+
+                        let dateMatch = true; // Standardmäßig wahr
+                        if (isTodayFilterActive) {
+                            const now = new Date();
+                            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+                            const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+                            const startTs = Math.floor(startOfDay.getTime() / 1000);
+                            const endTs = Math.floor(endOfDay.getTime() / 1000);
+                            dateMatch = rd.date >= startTs && rd.date <= endTs;
+                        } else {
+                            const nowUnix = Math.floor(Date.now() / 1000);
+                            dateMatch = rd.date > nowUnix;
+                        }
+                        
+                        return platformMatch && dateMatch;
+                    });
+                });
+            }
+
             loader.style.display = 'none';
-            if (games.length === 0 && appState.offset === 0) {
+            if (filteredGames.length === 0 && appState.offset === 0) {
                 let infoMsg = `Keine Spiele für die aktuelle Auswahl gefunden.`;
                 if (isTodayFilter) {
                     infoMsg = query 
@@ -205,8 +224,8 @@ function executeFetch(body, query = '', isTodayFilter = false) {
                 gamesContainer.innerHTML = `<p class="info-text">${infoMsg}</p>`;
                 return;
             }
-            displayGames(games, isTodayFilter);
-            loadMoreButton.style.display = games.length < gamesPerLoad ? 'none' : 'inline-block';
+            displayGames(filteredGames, isTodayFilter);
+            loadMoreButton.style.display = filteredGames.length < gamesPerLoad ? 'none' : 'inline-block';
         })
         .catch(err => {
             console.error('API-Fehler:', err);
