@@ -9,7 +9,8 @@ let countdownIntervalId = null;
 const appState = {
     offset: 0,
     searchQuery: '',
-    platformFilters: new Set()
+    platformFilters: new Set(),
+    isTodayFilterActive: false // NEU: Zustand für den "Heute"-Filter
 };
 
 // Konstanten für die API
@@ -67,6 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchForm = document.getElementById('search-form');
     const toggleButton = document.getElementById('theme-toggle');
     const platformFilterContainer = document.getElementById('platform-filter');
+    const todayFilterBtn = document.getElementById('today-filter-btn'); // NEU
 
     toggleButton?.addEventListener('click', () => {
         document.body.classList.toggle('light-mode');
@@ -75,6 +77,14 @@ document.addEventListener('DOMContentLoaded', () => {
     searchForm.addEventListener('submit', e => e.preventDefault());
 
     mainTitle.addEventListener('click', resetToUpcomingView);
+
+    // NEU: Event Listener für den "Heute"-Filter
+    todayFilterBtn?.addEventListener('click', () => {
+        appState.isTodayFilterActive = !appState.isTodayFilterActive;
+        todayFilterBtn.classList.toggle('active', appState.isTodayFilterActive);
+        appState.offset = 0;
+        fetchAndDisplayGames();
+    });
 
     searchInput.addEventListener('input', debounce(() => {
         const query = searchInput.value.trim();
@@ -102,16 +112,32 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function fetchAndDisplayGames() {
-    const { offset, searchQuery, platformFilters } = appState;
-    fetchGamesFromAPI(offset, searchQuery, platformFilters);
+    const { offset, searchQuery, platformFilters, isTodayFilterActive } = appState;
+    fetchGamesFromAPI(offset, searchQuery, platformFilters, isTodayFilterActive);
 }
 
 // ===================================
 // API-FUNKTIONEN
 // ===================================
-function fetchGamesFromAPI(offset, query = '', platformIds = new Set()) {
-    const nowUnix = Math.floor(Date.now() / 1000);
-    const conditions = [`first_release_date > ${nowUnix}`];
+function fetchGamesFromAPI(offset, query = '', platformIds = new Set(), isTodayFilter) {
+    const conditions = [];
+    let sort = 'sort first_release_date asc;';
+
+    // NEU: Logik für den "Heute"-Filter
+    if (isTodayFilter) {
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+        const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
+        const startTs = Math.floor(startOfDay.getTime() / 1000);
+        const endTs = Math.floor(endOfDay.getTime() / 1000);
+
+        conditions.push(`first_release_date >= ${startTs} & first_release_date <= ${endTs}`);
+        sort = 'sort popularity desc;'; // Bei "Heute" nach Popularität sortieren
+    } else {
+        const nowUnix = Math.floor(Date.now() / 1000);
+        conditions.push(`first_release_date > ${nowUnix}`);
+    }
 
     if (query) {
         conditions.push(`name ~ *"${query}"*`);
@@ -122,18 +148,18 @@ function fetchGamesFromAPI(offset, query = '', platformIds = new Set()) {
 
     const whereClause = conditions.join(' & ');
     const body = `
-        fields name, cover.url, first_release_date, websites.*, platforms.id, platforms.name, release_dates.*;
+        fields name, cover.url, first_release_date, websites.*, platforms.id, platforms.name, release_dates.*, popularity;
         where ${whereClause};
-        sort first_release_date asc;
+        ${sort}
         limit ${gamesPerLoad};
         offset ${offset};
     `;
 
-    executeFetch(body, query);
+    executeFetch(body, query, isTodayFilter);
 }
 
 
-function executeFetch(body, query = '') {
+function executeFetch(body, query = '', isTodayFilter = false) {
     const loader = document.getElementById('loader');
     const gamesContainer = document.getElementById('games-container');
     const loadMoreButton = document.getElementById('load-more-btn');
@@ -151,11 +177,20 @@ function executeFetch(body, query = '') {
         })
         .then(games => {
             loader.style.display = 'none';
-            if (query && games.length === 0 && appState.offset === 0) {
-                gamesContainer.innerHTML = `<p class="info-text">Keine kommenden Spiele für „${query}“ gefunden.</p>`;
+            // NEU: Angepasste "Nichts gefunden"-Nachricht
+            if (games.length === 0 && appState.offset === 0) {
+                let infoMsg = `Keine Spiele für die aktuelle Auswahl gefunden.`;
+                if (isTodayFilter) {
+                    infoMsg = query 
+                        ? `Keine heute erschienenen Spiele für "${query}" gefunden.`
+                        : `Heute sind anscheinend keine Spiele für die gewählten Plattformen erschienen.`;
+                } else if(query) {
+                     infoMsg = `Keine kommenden Spiele für „${query}“ gefunden.`;
+                }
+                gamesContainer.innerHTML = `<p class="info-text">${infoMsg}</p>`;
                 return;
             }
-            displayGames(games);
+            displayGames(games, isTodayFilter);
             loadMoreButton.style.display = games.length < gamesPerLoad ? 'none' : 'inline-block';
         })
         .catch(err => {
@@ -169,7 +204,7 @@ function executeFetch(body, query = '') {
 // ===================================
 // DARSTELLUNG & COUNTDOWN
 // ===================================
-function displayGames(games) {
+function displayGames(games, isTodayFilter = false) {
     const gamesContainer = document.getElementById('games-container');
     if (appState.offset === 0) {
         countdownElements.length = 0;
@@ -196,10 +231,9 @@ function displayGames(games) {
         let dateStr = 'Datum unbekannt';
         if (relDate) {
             const optsDate = { day: '2-digit', month: '2-digit', year: 'numeric' };
-            const optsTime = { ...optsDate, hour: '2-digit', minute: '2-digit' };
-            dateStr = isMidnightUTC(relDate)
-                ? `Erscheint am: ${relDate.toLocaleDateString('de-DE', optsDate)}`
-                : `Erscheint am: ${relDate.toLocaleString('de-DE', optsTime)} Uhr`;
+            dateStr = isTodayFilter 
+                ? `Heute erschienen!` 
+                : `Erscheint am: ${relDate.toLocaleDateString('de-DE', optsDate)}`;
         }
 
         const storeLink = getStoreLink(game);
@@ -222,15 +256,19 @@ function displayGames(games) {
             </div>
         `;
         fragment.appendChild(card);
+        
+        const countdownTimerEl = card.querySelector('.countdown-timer');
 
-        if (relDate && relDate > new Date()) {
-            
-            // Erstelle einen neuen Timestamp für Mitternacht in der lokalen Zeitzone
-            const dateString = relDate.toISOString().slice(0, 10); // Ergibt "YYYY-MM-DD"
-            const localMidnight = new Date(dateString + "T00:00:00"); // Erstellt Datum um 00:00 lokaler Zeit
+        if (isTodayFilter) {
+            countdownTimerEl.innerHTML = '🎉 Veröffentlicht!';
+        } else if (relDate && relDate > new Date()) {
+            const dateString = relDate.toISOString().slice(0, 10);
+            const localMidnight = new Date(dateString + "T00:00:00");
             const localTimestamp = localMidnight.getTime() / 1000;
             
             countdownElements.push({ elementId: `timer-${game.id}`, timestamp: localTimestamp });
+        } else {
+            countdownTimerEl.style.display = 'none';
         }
     });
 
@@ -273,7 +311,13 @@ function updateCountdowns() {
 // ===================================
 function resetToUpcomingView() {
     const searchInput = document.getElementById('search-input');
+    const todayFilterBtn = document.getElementById('today-filter-btn');
     searchInput.value = '';
+    
+    // NEU: Setze auch den "Heute"-Filter zurück
+    appState.isTodayFilterActive = false;
+    todayFilterBtn.classList.remove('active');
+    
     appState.searchQuery = '';
     appState.offset = 0;
     fetchAndDisplayGames();
@@ -283,10 +327,6 @@ function getBestReleaseTimestamp(releaseDates, fallback) {
     if (!Array.isArray(releaseDates) || !releaseDates.length) return fallback;
     const eu = releaseDates.find(d => d.region === REGION_EUROPE);
     return eu?.date || releaseDates[0]?.date || fallback;
-}
-
-function isMidnightUTC(date) {
-    return date.getUTCHours() === 0 && date.getUTCMinutes() === 0 && date.getUTCSeconds() === 0;
 }
 
 function localizeUrl(urlString, gameName) {

@@ -87,6 +87,35 @@ h1 {
     font-size: 1rem;
 }
 
+.filter-controls {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+.filter-btn {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.filter-btn:hover {
+    border-color: var(--color-accent);
+}
+
+.filter-btn.active {
+    background-color: var(--color-accent);
+    border-color: var(--color-accent);
+    color: white;
+}
+
+
 #platform-filter {
     display: flex;
     flex-wrap: wrap;
