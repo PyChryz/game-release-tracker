@@ -314,7 +314,7 @@ function isMidnightUTC(date) {
 function getStoreLink(websites, activeFilters) {
     if (!websites || websites.length === 0) return null;
 
-    // Store-Kategorien von IGDB
+    // --- Kategorie-Definitionen ---
     const STORE_OFFICIAL = 1;
     const STORE_STEAM = 13;
     const STORE_XBOX = 14;
@@ -323,64 +323,81 @@ function getStoreLink(websites, activeFilters) {
     const STORE_GOG = 17;
     const STORE_NINTENDO = 18;
 
-    // Helper-Funktion bleibt gleich
-    const findStoreLinkByCategory = (categoryId) => {
+    // --- Hilfsfunktionen ---
+    // Sucht einen Link für eine Kategorie
+    const findLink = (categoryId) => {
         const site = websites.find(s => s.category === categoryId);
         return site ? site.url : null;
     };
+    
+    // Holt den Steam-Link und fügt den deutschen Sprachparameter hinzu
+    const getSteamLink = () => {
+        const link = findLink(STORE_STEAM);
+        if (link) {
+            try {
+                const url = new URL(link);
+                url.searchParams.set('l', 'german');
+                return url.toString();
+            } catch {
+                return link; // Fallback, falls die URL ungültig ist
+            }
+        }
+        return null;
+    };
 
-    let categoriesToSearch = [];
-
-    // NEUE LOGIK: Baue eine Suchliste basierend auf den aktiven Filtern
+    // --- LOGIK FÜR AKTIVE FILTER ---
+    // Wenn Filter aktiv sind, wird NUR nach den passenden Stores gesucht.
     if (activeFilters.size > 0) {
-        // Füge die Stores basierend auf den aktiven Filtern hinzu.
-        // Die Reihenfolge hier bestimmt die Priorität.
+        let link = null;
+        // Die Reihenfolge der 'if'-Blöcke bestimmt die Priorität, wenn mehrere Filter aktiv sind.
+        
+        // Priorität 1: PlayStation
         if (activeFilters.has(167) || activeFilters.has(48)) {
-            categoriesToSearch.push(STORE_PLAYSTATION);
+            link = findLink(STORE_PLAYSTATION);
+            if (link) return link;
         }
+        // Priorität 2: Xbox
         if (activeFilters.has(169) || activeFilters.has(49)) {
-            categoriesToSearch.push(STORE_XBOX);
+            link = findLink(STORE_XBOX);
+            if (link) return link;
         }
+        // Priorität 3: Nintendo
         if (activeFilters.has(130)) {
-            categoriesToSearch.push(STORE_NINTENDO);
+            link = findLink(STORE_NINTENDO);
+            if (link) return link;
         }
+        // Priorität 4: PC
         if (activeFilters.has(6)) {
-            // PC-Stores bekommen ihre eigene Priorität
-            categoriesToSearch.push(STORE_STEAM, STORE_EPIC, STORE_GOG);
+            // Suche in der Reihenfolge: Steam, dann Epic, dann GOG
+            link = getSteamLink() || findLink(STORE_EPIC) || findLink(STORE_GOG);
+            if (link) return link;
         }
-    } else {
-        // FALLBACK-LOGIK: Wenn KEIN Filter aktiv ist, benutze eine Standard-Reihenfolge
-        categoriesToSearch = [
-            STORE_STEAM,
-            STORE_PLAYSTATION,
-            STORE_XBOX,
-            STORE_NINTENDO,
-            STORE_EPIC,
-            STORE_GOG,
-            STORE_OFFICIAL
-        ];
+
+        // SEHR WICHTIG: Wenn nach der Prüfung aller aktiven Filter kein Link gefunden wurde,
+        // gib NULL zurück. Dies verhindert das Durchfallen zur Fallback-Logik.
+        return null;
+    }
+
+    // --- FALLBACK-LOGIK (NUR WENN KEINE FILTER AKTIV SIND) ---
+    // Suche zuerst nach allen wichtigen Store-Links in einer klaren Priorität.
+    const unfilteredStoreLink = getSteamLink() ||
+                              findLink(STORE_PLAYSTATION) ||
+                              findLink(STORE_XBOX) ||
+                              findLink(STORE_NINTENDO) ||
+                              findLink(STORE_EPIC) ||
+                              findLink(STORE_GOG);
+
+    if (unfilteredStoreLink) {
+        return unfilteredStoreLink;
     }
     
-    // Durchsuche die erstellte Liste und gib den ersten Treffer zurück
-    for (const categoryId of categoriesToSearch) {
-        const link = findStoreLinkByCategory(categoryId);
-        if (link) {
-            // Spezielle Logik für Steam, um den deutschen Store zu erzwingen
-            if (categoryId === STORE_STEAM) {
-                try {
-                    const url = new URL(link);
-                    url.searchParams.set('l', 'german');
-                    return url.toString();
-                } catch (e) {
-                    return link; // Fallback, falls die URL ungültig ist
-                }
-            }
-            return link; // Gib den Link für jeden anderen Store direkt zurück
-        }
+    // ALLERLETZTE OPTION: Nimm die offizielle Webseite, ABER nur, wenn es nicht Reddit ist.
+    const officialLink = findLink(STORE_OFFICIAL);
+    if (officialLink && !officialLink.includes('reddit.com')) {
+        return officialLink;
     }
 
-    // Wenn nach der ganzen Suche nichts gefunden wurde
-    return null;
+    return null; // Absolut nichts Passendes gefunden.
 }
 
 // ===================================
