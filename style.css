@@ -19,11 +19,10 @@ h1 {
 /* =================================== */
 .site-header {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 15px;
+    flex-direction: column; /* Stapelt die Elemente untereinander */
+    align-items: center;    /* Zentriert sie horizontal */
+    gap: 10px;
     margin-bottom: 20px;
-    position: relative;
 }
 
 .site-logo {
