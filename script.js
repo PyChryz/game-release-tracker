@@ -27,6 +27,19 @@ const platformIconMap = {
     130: '<i class="fas fa-gamepad"></i>'             // Nintendo Switch
 };
 
+const platformToStoreMap = {
+    // PC -> Steam, Epic, GOG
+    6: [13, 16, 17],
+    // PlayStation -> PlayStation Store
+    48: [19], // PS4
+    167: [19], // PS5
+    // Xbox -> Microsoft Store
+    49: [20], // Xbox One
+    169: [20], // Xbox Series X|S
+    // Nintendo -> Nintendo eShop
+    130: [21] // Switch
+};
+
 // ===================================
 // DOM-ELEMENTE
 // ===================================
@@ -222,7 +235,7 @@ function displayGames(games) {
             }
         }
 
-        const storeLink = getStoreLink(game.websites);
+        const storeLink = getStoreLink(game.websites, activePlatformFilters);
         const imageContainerTag = storeLink ? 'a' : 'div';
         const imageElement = `
             <${imageContainerTag} 
@@ -310,8 +323,26 @@ function isMidnightUTC(date) {
     return date.getUTCHours() === 0 && date.getUTCMinutes() === 0 && date.getUTCSeconds() === 0;
 }
 
-function getStoreLink(websites) {
-    if (!websites) return null;
+function getStoreLink(websites, activeFilters) {
+    if (!websites || websites.length === 0) return null;
+
+    // Wenn Filter aktiv sind, suche gezielt nach dem passenden Store
+    if (activeFilters.size > 0) {
+        // Sammle alle gewünschten Store-Kategorien basierend auf den aktiven Filtern
+        const targetStoreCategories = [...activeFilters].flatMap(platformId => platformToStoreMap[platformId] || []);
+
+        if (targetStoreCategories.length > 0) {
+            // Finde den ersten Link, der zu einer der Ziel-Kategorien passt
+            for (const categoryId of targetStoreCategories) {
+                const specificStoreLink = websites.find(site => site.category === categoryId);
+                if (specificStoreLink) {
+                    return specificStoreLink.url; // Gib den spezifischen Store-Link zurück.
+                }
+            }
+        }
+    }
+
+    // FALLBACK-LOGIK: Wenn kein Filter aktiv ist oder kein spezifischer Store gefunden wurde
     const storePriority = {
         [STORE_STEAM]: 1,
         [STORE_EPIC]: 2,
