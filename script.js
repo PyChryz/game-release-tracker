@@ -10,7 +10,6 @@ const countdownElements = [];
 let countdownStarted = false;
 let activePlatformFilters = new Set();
 
-// KORREKTUR: Fehlende Konstanten hinzugefügt
 const REGION_EUROPE = 2;
 const STORE_STEAM = 13;
 const STORE_EPIC = 16;
@@ -25,6 +24,23 @@ const platformIconMap = {
     48: '<i class="fa-brands fa-playstation"></i>',
     130: '<i class="fas fa-gamepad"></i>'
 };
+
+const platformToStoreMap = new Map([
+    [6, { type: 'category', ids: [STORE_STEAM, STORE_EPIC, STORE_GOG] }],
+    [48,  { type: 'domain', domains: ['store.playstation.com'] }],
+    [167, { type: 'domain', domains: ['store.playstation.com'] }],
+    [49,  { type: 'domain', domains: ['xbox.com', 'microsoft.com'] }],
+    [169, { type: 'domain', domains: ['xbox.com', 'microsoft.com'] }],
+    [130, { type: 'domain', domains: ['nintendo.com'] }]
+]);
+
+// KORREKTUR: Fehlende Konstante hinzugefügt
+const storePriority = new Map([
+    [STORE_STEAM, 1],
+    [STORE_EPIC, 2],
+    [STORE_GOG, 3],
+    [STORE_OFFICIAL, 4]
+]);
 
 // ===================================
 // DOM-ELEMENTE
@@ -192,7 +208,7 @@ function displayGames(games) {
 
         const bestTimestamp = getBestReleaseTimestamp(game.release_dates, game.first_release_date);
         const releaseDate = bestTimestamp ? new Date(bestTimestamp * 1000) : null;
-
+        
         let releaseDateString = 'Datum unbekannt';
         if (releaseDate) {
             if (isMidnightUTC(releaseDate)) {
