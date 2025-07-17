@@ -71,7 +71,7 @@ function fetchGames(body, isSearch = false, query = '') {
 function fetchUpcomingGames(offset) {
     const currentTimestamp = Math.floor(Date.now() / 1000);
     const body = `
-        fields name, cover.url, first_release_date, websites.*, platforms.name;
+        fields name, cover.url, first_release_date, websites.*, platforms.name, release_dates.*;
         where first_release_date > ${currentTimestamp} & cover.url != null;
         sort first_release_date asc;
         limit ${gamesPerLoad};
@@ -83,7 +83,7 @@ function fetchUpcomingGames(offset) {
 function fetchSearchResults(query, offset) {
     const currentTimestamp = Math.floor(Date.now() / 1000);
     const body = `
-        fields name, cover.url, first_release_date, websites.*, platforms.name;
+        fields name, cover.url, first_release_date, websites.*, platforms.name, release_dates.*;
         where name ~ *"${query}"* & first_release_date > ${currentTimestamp} & cover.url != null;
         limit ${gamesPerLoad};
         offset ${offset};
@@ -138,6 +138,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // --- DARSTELLUNGS-FUNKTIONEN ---
 
+function getBestReleaseTimestamp(releaseDates, fallbackTimestamp) {
+    if (!releaseDates || releaseDates.length === 0) {
+        return fallbackTimestamp;
+    }
+
+    // Regionen-ID für Europa ist 2
+    const europeRelease = releaseDates.find(date => date.region === 2);
+
+    if (europeRelease && europeRelease.date) {
+        return europeRelease.date; // Gib den europäischen Timestamp zurück
+    }
+
+    // Wenn kein EU-Datum gefunden, nimm das erste verfügbare Datum
+    if (releaseDates[0] && releaseDates[0].date) {
+        return releaseDates[0].date;
+    }
+
+    // Wenn alles fehlschlägt, nimm das allgemeine Datum
+    return fallbackTimestamp;
+}
+
+
 function displayGames(games) {
     const container = document.getElementById('games-container');
 
@@ -145,25 +167,25 @@ function displayGames(games) {
         const placeholderImageUrl = 'data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" width="280" height="200" viewBox="0 0 280 200"%3e%3crect fill="%232a2a2a" width="100%" height="100%"/%3e%3ctext fill="%23666" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="16" font-family="sans-serif"%3eKein Cover%3c/text%3e%3c/svg%3e';
         const coverUrl = game.cover ? game.cover.url.replace('t_thumb', 't_cover_big') : placeholderImageUrl;
 
+
         let platformIcons = '';
         if (game.platforms) {
             const platformNames = game.platforms.map(p => p.name);
-
-            console.log(`Spiel: ${game.name}, Plattformen:`, platformNames);
-
             const uniquePlatforms = new Set();
             if (platformNames.includes('PC (Microsoft Windows)')) uniquePlatforms.add('<i class="fa-brands fa-windows"></i>');
             if (platformNames.some(p => p.includes('PlayStation'))) uniquePlatforms.add('<i class="fa-brands fa-playstation"></i>');
             if (platformNames.some(p => p.includes('Xbox'))) uniquePlatforms.add('<i class="fa-brands fa-xbox"></i>');
-            if (platformNames.some(p => p.includes('Nintendo Switch') || p.includes('Nintendo Switch 2'))) uniquePlatforms.add('<i class="fas fa-gamepad"></i>');
+            if (platformNames.some(p => p.includes('Nintendo') || p.includes('Switch'))) {
+                uniquePlatforms.add('<i class="fas fa-gamepad"></i>');
+            }
             platformIcons = [...uniquePlatforms].join(' ');
         }
 
-        const releaseDate = game.first_release_date ? new Date(game.first_release_date * 1000) : null;
+        const bestTimestamp = getBestReleaseTimestamp(game.release_dates, game.first_release_date);
+        const releaseDate = bestTimestamp ? new Date(bestTimestamp * 1000) : null;
+
         const storeLink = getStoreLink(game.websites);
 
-
-        // Wir fügen dem Container eine Klasse und das Hintergrundbild als inline-Style hinzu.
         const imageContainerTag = storeLink ? 'a' : 'div';
         const imageElement = `
             <${imageContainerTag} 
@@ -177,7 +199,6 @@ function displayGames(games) {
             </${imageContainerTag}>
         `;
 
-
         const gameCard = document.createElement('div');
         gameCard.classList.add('game-card');
         gameCard.innerHTML = `
@@ -187,14 +208,15 @@ function displayGames(games) {
                     <h2 class="game-title">${game.name}</h2>
                     <div class="platform-icons">${platformIcons}</div>
                 </div>
-                <p class="release-date">${releaseDate ? 'Erscheint am: ' + releaseDate.toLocaleDateString('de-DE') : 'Datum unbekannt'}</p>
+                <p class="release-date">${releaseDate ? 'Erscheint am: ' + releaseDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' Uhr' : 'Datum unbekannt'}</p>
                 <div class="countdown-timer" id="timer-${game.id}"></div>
             </div>
         `;
         container.appendChild(gameCard);
 
         if (releaseDate && releaseDate > new Date()) {
-            startCountdown(`timer-${game.id}`, game.first_release_date);
+            // Wir übergeben den besten Timestamp an den Countdown
+            startCountdown(`timer-${game.id}`, bestTimestamp);
         }
     });
 }

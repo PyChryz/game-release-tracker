@@ -11,6 +11,24 @@ h1 {
     cursor: pointer;
 }
 
+.site-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px; /* Abstand zwischen Logo und Text */
+    margin-bottom: 20px;
+}
+
+.site-logo {
+    height: 100px; /* Höhe des Logos anpassen */
+    width: auto;
+}
+
+/* Verhindert, dass die h1-Überschrift zu viel eigenen Abstand hat */
+.site-header h1 {
+    margin: 0;
+}
+
 .loader {
   border: 5px solid #333; /* Hellerer Rand des Kreises */
   border-top: 5px solid #9146ff; /* Die Farbe, die sich dreht */
@@ -178,4 +196,36 @@ h1 {
 
 #load-more-btn:hover {
     background-color: #7a2de0;
+}
+
+
+/* Stil für Impressum & Datenschutz-Seite */
+.legal-container {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 20px;
+    background-color: #2a2a2a;
+    border-radius: 8px;
+    line-height: 1.7;
+}
+
+.legal-container a {
+    color: #9146ff;
+}
+
+/* Stil für den Footer */
+footer {
+    text-align: center;
+    padding: 40px 20px 20px 20px;
+    margin-top: 20px;
+    border-top: 1px solid #333;
+}
+
+footer a {
+    color: #ccc;
+    text-decoration: none;
+}
+
+footer a:hover {
+    text-decoration: underline;
 }
