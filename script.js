@@ -314,70 +314,75 @@ function isMidnightUTC(date) {
 function getStoreLink(websites, activeFilters) {
     if (!websites || websites.length === 0) return null;
 
-    // Helper-Funktion, die zuerst nach einer deutschen URL sucht, dann nach einer allgemeinen.
-    const findBestDomainLink = (domain) => {
-        const germanLink = websites.find(site => site.url.includes(domain) && site.url.includes('/de-de'));
-        if (germanLink) return germanLink.url;
+    // Store-Kategorien von IGDB
+    const STORE_OFFICIAL = 1;
+    const STORE_STEAM = 13;
+    const STORE_XBOX = 14;
+    const STORE_PLAYSTATION = 15;
+    const STORE_EPIC = 16;
+    const STORE_GOG = 17;
+    const STORE_NINTENDO = 18;
 
-        const genericLink = websites.find(site => site.url.includes(domain));
-        return genericLink ? genericLink.url : null;
+
+    // Helper-Funktion, die einen Link anhand der Store-Kategorie findet
+    const findStoreLinkByCategory = (categoryId) => {
+        const site = websites.find(s => s.category === categoryId);
+        return site ? site.url : null;
     };
 
-    // Helper-Funktion für PC-Stores
-    const findPcStoreLink = (storeId) => {
-        const link = websites.find(site => site.category === storeId);
-        return link ? link.url : null;
-    };
-
-
-    // NEUE LOGIK: Wenn Filter aktiv sind, suche gezielt
+    // Wenn Filter aktiv sind, suche gezielt nach dem passenden Store
     if (activeFilters.size > 0) {
         // Prüfe auf PlayStation
         if (activeFilters.has(167) || activeFilters.has(48)) {
-            const psLink = findBestDomainLink('store.playstation.com');
-            if (psLink) return psLink;
+            const psLink = findStoreLinkByCategory(STORE_PLAYSTATION);
+            if (psLink) return psLink; // Store leitet selbst auf /de-de weiter
         }
-        // Prüfe auf Xbox (sucht jetzt nach beiden Domains)
+        // ✅ Prüfe auf Xbox (jetzt mit korrekter Kategorie-ID)
         if (activeFilters.has(169) || activeFilters.has(49)) {
-            const xboxLink = findBestDomainLink('xbox.com') || findBestDomainLink('microsoft.com');
-            if (xboxLink) return xboxLink;
+            const xboxLink = findStoreLinkByCategory(STORE_XBOX);
+            if (xboxLink) return xboxLink; // Store leitet selbst auf /de-DE weiter
         }
         // Prüfe auf Nintendo
         if (activeFilters.has(130)) {
-            const nintendoLink = findBestDomainLink('nintendo.com');
-            if (nintendoLink) return nintendoLink;
+            const nintendoLink = findStoreLinkByCategory(STORE_NINTENDO);
+            if (nintendoLink) return nintendoLink; // Store leitet selbst weiter
         }
         // Prüfe auf PC
         if (activeFilters.has(6)) {
-            const steamLink = findPcStoreLink(STORE_STEAM);
+            const steamLink = findStoreLinkByCategory(STORE_STEAM);
             if (steamLink) {
-                // Füge deutschen Sprachparameter hinzu
+                // Nur bei Steam fügen wir den Sprachparameter hinzu, da dies zuverlässig funktioniert
                 const url = new URL(steamLink);
                 url.searchParams.set('l', 'german');
                 return url.toString();
             }
-            const epicLink = findPcStoreLink(STORE_EPIC);
+            const epicLink = findStoreLinkByCategory(STORE_EPIC);
             if (epicLink) return epicLink;
-            const gogLink = findPcStoreLink(STORE_GOG);
+
+            const gogLink = findStoreLinkByCategory(STORE_GOG);
             if (gogLink) return gogLink;
         }
     }
 
-    // FALLBACK-LOGIK: Wenn kein Filter aktiv ist, nimm den wichtigsten verfügbaren Link
-    const steamUrl = findPcStoreLink(STORE_STEAM);
+    // FALLBACK-LOGIK: Wenn kein Filter aktiv ist, nimm den wichtigsten verfügbaren Link (Priorität: Steam)
+    const steamUrl = findStoreLinkByCategory(STORE_STEAM);
     if (steamUrl) {
         const url = new URL(steamUrl);
         url.searchParams.set('l', 'german');
         return url.toString();
     }
-    const epicUrl = findPcStoreLink(STORE_EPIC);
-    if (epicUrl) return epicUrl;
-    const gogUrl = findPcStoreLink(STORE_GOG);
-    if (gogUrl) return gogUrl;
-    const officialUrl = websites.find(site => site.category === STORE_OFFICIAL);
-    if (officialUrl) return officialUrl.url;
-
-    return null; // Wenn gar kein passender Link gefunden wurde
+    // Nimm den nächsten verfügbaren Link
+    const fallbackUrls = [
+        findStoreLinkByCategory(STORE_PLAYSTATION),
+        findStoreLinkByCategory(STORE_XBOX),
+        findStoreLinkByCategory(STORE_NINTENDO),
+        findStoreLinkByCategory(STORE_EPIC),
+        findStoreLinkByCategory(STORE_GOG),
+        findStoreLinkByCategory(STORE_OFFICIAL)
+    ];
+    
+    // Gib den ersten gültigen Link aus der Fallback-Liste zurück
+    return fallbackUrls.find(url => url !== null) || null;
 }
 
 // ===================================
