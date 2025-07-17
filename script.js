@@ -10,7 +10,7 @@ const appState = {
     offset: 0,
     searchQuery: '',
     platformFilters: new Set(),
-    isTodayFilterActive: false // NEU: Zustand für den "Heute"-Filter
+    isTodayFilterActive: false
 };
 
 // Konstanten für die API
@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchForm = document.getElementById('search-form');
     const toggleButton = document.getElementById('theme-toggle');
     const platformFilterContainer = document.getElementById('platform-filter');
-    const todayFilterBtn = document.getElementById('today-filter-btn'); // NEU
+    const todayFilterBtn = document.getElementById('today-filter-btn');
 
     toggleButton?.addEventListener('click', () => {
         document.body.classList.toggle('light-mode');
@@ -78,7 +78,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     mainTitle.addEventListener('click', resetToUpcomingView);
 
-    // NEU: Event Listener für den "Heute"-Filter
     todayFilterBtn?.addEventListener('click', () => {
         appState.isTodayFilterActive = !appState.isTodayFilterActive;
         todayFilterBtn.classList.toggle('active', appState.isTodayFilterActive);
@@ -107,7 +106,6 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchAndDisplayGames();
     });
 
-    // Initialer Ladevorgang
     fetchAndDisplayGames();
 });
 
@@ -121,9 +119,11 @@ function fetchAndDisplayGames() {
 // ===================================
 function fetchGamesFromAPI(offset, query = '', platformIds = new Set(), isTodayFilter) {
     const conditions = [];
-    let sort = 'sort first_release_date asc;';
+    
+    // *** KORREKTUR HIER ***
+    // Die Sortierung wird vereinheitlicht, um API-Fehler zu vermeiden.
+    const sort = 'sort first_release_date asc;';
 
-    // NEU: Logik für den "Heute"-Filter
     if (isTodayFilter) {
         const now = new Date();
         const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
@@ -133,7 +133,6 @@ function fetchGamesFromAPI(offset, query = '', platformIds = new Set(), isTodayF
         const endTs = Math.floor(endOfDay.getTime() / 1000);
 
         conditions.push(`first_release_date >= ${startTs} & first_release_date <= ${endTs}`);
-        sort = 'sort popularity desc;'; // Bei "Heute" nach Popularität sortieren
     } else {
         const nowUnix = Math.floor(Date.now() / 1000);
         conditions.push(`first_release_date > ${nowUnix}`);
@@ -147,8 +146,11 @@ function fetchGamesFromAPI(offset, query = '', platformIds = new Set(), isTodayF
     }
 
     const whereClause = conditions.join(' & ');
+    
+    // *** KORREKTUR HIER ***
+    // Das Feld "popularity" wird nicht mehr angefragt.
     const body = `
-        fields name, cover.url, first_release_date, websites.*, platforms.id, platforms.name, release_dates.*, popularity;
+        fields name, cover.url, first_release_date, websites.*, platforms.id, platforms.name, release_dates.*;
         where ${whereClause};
         ${sort}
         limit ${gamesPerLoad};
@@ -177,7 +179,6 @@ function executeFetch(body, query = '', isTodayFilter = false) {
         })
         .then(games => {
             loader.style.display = 'none';
-            // NEU: Angepasste "Nichts gefunden"-Nachricht
             if (games.length === 0 && appState.offset === 0) {
                 let infoMsg = `Keine Spiele für die aktuelle Auswahl gefunden.`;
                 if (isTodayFilter) {
@@ -268,7 +269,7 @@ function displayGames(games, isTodayFilter = false) {
             
             countdownElements.push({ elementId: `timer-${game.id}`, timestamp: localTimestamp });
         } else {
-            countdownTimerEl.style.display = 'none';
+             if (countdownTimerEl) countdownTimerEl.style.display = 'none';
         }
     });
 
@@ -314,9 +315,8 @@ function resetToUpcomingView() {
     const todayFilterBtn = document.getElementById('today-filter-btn');
     searchInput.value = '';
     
-    // NEU: Setze auch den "Heute"-Filter zurück
     appState.isTodayFilterActive = false;
-    todayFilterBtn.classList.remove('active');
+    if(todayFilterBtn) todayFilterBtn.classList.remove('active');
     
     appState.searchQuery = '';
     appState.offset = 0;
