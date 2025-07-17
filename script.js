@@ -10,35 +10,21 @@ const countdownElements = [];
 let countdownStarted = false;
 let activePlatformFilters = new Set();
 
-// Konstanten für Plattform-Icons
+// KORREKTUR: Fehlende Konstanten hinzugefügt
+const REGION_EUROPE = 2;
+const STORE_STEAM = 13;
+const STORE_EPIC = 16;
+const STORE_GOG = 17;
+const STORE_OFFICIAL = 1;
+
 const platformIconMap = {
-    6: '<i class="fa-brands fa-windows"></i>',       // PC
-    169: '<i class="fa-brands fa-xbox"></i>',         // Xbox Series X|S
-    49: '<i class="fa-brands fa-xbox"></i>',          // Xbox One
-    167: '<i class="fa-brands fa-playstation"></i>', // PlayStation 5
-    48: '<i class="fa-brands fa-playstation"></i>',  // PlayStation 4
-    130: '<i class="fas fa-gamepad"></i>'             // Nintendo Switch
+    6: '<i class="fa-brands fa-windows"></i>',
+    169: '<i class="fa-brands fa-xbox"></i>',
+    49: '<i class="fa-brands fa-xbox"></i>',
+    167: '<i class="fa-brands fa-playstation"></i>',
+    48: '<i class="fa-brands fa-playstation"></i>',
+    130: '<i class="fas fa-gamepad"></i>'
 };
-
-// Map für Plattformen zu Stores und Domains
-const platformToStoreMap = new Map([
-    // PC -> Hier bleiben die Kategorie-IDs, da sie zuverlässig sind.
-    [6, { type: 'category', ids: [13, 16, 17] }], 
-    // Konsolen -> Hier suchen wir nach Text in der URL.
-    [48,  { type: 'domain', domains: ['store.playstation.com'] }], // PS4
-    [167, { type: 'domain', domains: ['store.playstation.com'] }], // PS5
-    [49,  { type: 'domain', domains: ['xbox.com', 'microsoft.com'] }], // Xbox One
-    [169, { type: 'domain', domains: ['xbox.com', 'microsoft.com'] }], // Xbox Series X|S
-    [130, { type: 'domain', domains: ['nintendo.com'] }] // Switch
-]);
-
-// Fallback-Priorität für Stores, wenn kein Filter aktiv ist
-const storePriority = new Map([
-    [13, 1], // Steam
-    [16, 2], // Epic
-    [17, 3], // GOG
-    [1,  4]  // Official
-]);
 
 // ===================================
 // DOM-ELEMENTE
@@ -57,12 +43,14 @@ const loader = document.getElementById('loader');
 // ===================================
 document.addEventListener('DOMContentLoaded', () => {
     const siteLogo = document.getElementById('site-logo-img');
-    const lightLogoSrc = './icon/logo.png';
-    const darkLogoSrc = './icon/logo-dark.png'; // Stelle sicher, dass du ein dunkles Logo hast
+    const lightLogoSrc = './icon/logo-light.png';
+    const darkLogoSrc = './icon/logo-dark.png';
 
     toggleButton?.addEventListener('click', () => {
         document.body.classList.toggle('light-mode');
-        siteLogo.src = document.body.classList.contains('light-mode') ? darkLogoSrc : lightLogoSrc;
+        if(siteLogo) {
+            siteLogo.src = document.body.classList.contains('light-mode') ? darkLogoSrc : lightLogoSrc;
+        }
     });
 
     searchForm.addEventListener('submit', (event) => event.preventDefault());
@@ -204,7 +192,7 @@ function displayGames(games) {
 
         const bestTimestamp = getBestReleaseTimestamp(game.release_dates, game.first_release_date);
         const releaseDate = bestTimestamp ? new Date(bestTimestamp * 1000) : null;
-        
+
         let releaseDateString = 'Datum unbekannt';
         if (releaseDate) {
             if (isMidnightUTC(releaseDate)) {
@@ -308,7 +296,6 @@ function getStoreLink(websites, activeFilters) {
         for (const platformId of activeFilters) {
             const rule = platformToStoreMap.get(platformId);
             if (!rule) continue;
-
             if (rule.type === 'domain') {
                 for (const domain of rule.domains) {
                     const site = findByDomain(domain);
@@ -333,7 +320,7 @@ function getStoreLink(websites, activeFilters) {
         }
     }
     
-    if (bestPriority === 1 && bestLink) { // Priorität 1 ist Steam
+    if (bestPriority === 1 && bestLink) {
         try {
             const url = new URL(bestLink);
             url.searchParams.set('l', 'german');
