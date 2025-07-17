@@ -65,8 +65,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggleButton   = document.getElementById('theme-toggle');
     const platformFilterContainer = document.getElementById('platform-filter');
     const siteLogo       = document.getElementById('site-logo-img');
-    const lightLogoSrc   = './icon/logo-light.png';
-    const darkLogoSrc    = './icon/logo-dark.png';
+    const lightLogoSrc   = './icon/logo.png';
+    const darkLogoSrc    = './icon/logo.png';
 
     toggleButton?.addEventListener('click', () => {
         document.body.classList.toggle('light-mode');
