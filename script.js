@@ -41,7 +41,7 @@ const platformStoreRules = new Map([
     [167, { type: 'domain', domains: ['store.playstation.com'] }],
     [49, { type: 'domain', domains: ['xbox.com', 'microsoft.com'] }],
     [169, { type: 'domain', domains: ['xbox.com', 'microsoft.com'] }],
-    [130, { type: 'domain', domains: ['nintendo'] }] // Geändert, um alle Nintendo-Domains zu erfassen
+    [130, { type: 'domain', domains: ['nintendo'] }]
 ]);
 
 
@@ -202,7 +202,7 @@ function displayGames(games) {
                 : `Erscheint am: ${relDate.toLocaleString('de-DE', optsTime)} Uhr`;
         }
 
-        const storeLink = getStoreLink(game); // Geändert: Übergebe das ganze Spielobjekt
+        const storeLink = getStoreLink(game);
         const wrapperTag = storeLink ? 'a' : 'div';
         const wrapperAttrs = storeLink ? `href="${storeLink}" target="_blank" rel="noopener noreferrer"` : '';
 
@@ -224,7 +224,13 @@ function displayGames(games) {
         fragment.appendChild(card);
 
         if (relDate && relDate > new Date()) {
-            countdownElements.push({ elementId: `timer-${game.id}`, timestamp: bestTs });
+            
+            // Erstelle einen neuen Timestamp für Mitternacht in der lokalen Zeitzone
+            const dateString = relDate.toISOString().slice(0, 10); // Ergibt "YYYY-MM-DD"
+            const localMidnight = new Date(dateString + "T00:00:00"); // Erstellt Datum um 00:00 lokaler Zeit
+            const localTimestamp = localMidnight.getTime() / 1000;
+            
+            countdownElements.push({ elementId: `timer-${game.id}`, timestamp: localTimestamp });
         }
     });
 
@@ -286,35 +292,31 @@ function isMidnightUTC(date) {
 function localizeUrl(urlString, gameName) {
     if (!urlString) return null;
 
-    // NEU: Nintendo-Logik
     if (urlString.includes('nintendo.com')) {
         const encodedGameName = encodeURIComponent(gameName);
         return `https://www.nintendo.de/Suche/Suche-299117.html?q=${encodedGameName}`;
     }
 
-    // Steam: Fügt den Sprachparameter hinzu
     if (urlString.includes('store.steampowered.com')) {
         try {
             const url = new URL(urlString);
             url.searchParams.set('l', 'german');
             return url.toString();
         } catch (e) {
-            return urlString; // Fallback
+            return urlString;
         }
     }
 
-    // PlayStation & Xbox: Ersetzt Ländercode im Pfad (z.B. /en-us/ -> /de-de/)
     const localePattern = /\/en-[a-zA-Z]{2}\//;
     if (localePattern.test(urlString)) {
         return urlString.replace(localePattern, '/de-de/');
     }
 
-    // Fallback: Gibt die originale URL zurück, wenn keine Regel zutrifft
     return urlString;
 }
 
 function getStoreLink(game) {
-    const { websites, name, platforms } = game;
+    const { websites, name } = game;
     const activeFilters = appState.platformFilters;
     
     if (!Array.isArray(websites) || !websites.length) return null;
@@ -322,7 +324,6 @@ function getStoreLink(game) {
     const findByDomain = (domain) => websites.find(site => site.url.includes(domain));
     const findByCategory = (catId) => websites.find(site => site.category === catId);
     
-    // Priorisiere Links basierend auf aktiven Filtern
     if (activeFilters instanceof Set && activeFilters.size > 0) {
         for (const platformId of activeFilters) {
             const rule = platformStoreRules.get(platformId);
@@ -341,7 +342,6 @@ function getStoreLink(game) {
         }
     }
 
-    // Fallback: Finde den besten Link basierend auf der Priorität
     let bestLink = null;
     let bestPriority = Infinity;
     for (const site of websites) {
