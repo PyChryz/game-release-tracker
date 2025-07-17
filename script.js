@@ -33,7 +33,8 @@ const platformIconMap = {
     169: '<i class="fa-brands fa-xbox"></i>',
     48: '<i class="fa-brands fa-playstation"></i>',
     167: '<i class="fa-brands fa-playstation"></i>',
-    130: '<i class="fas fa-gamepad"></i>'
+    130: '<i class="fas fa-gamepad nintendo-old"></i>',
+    508: '<i class="fas fa-gamepad nintendo-new"></i>'
 };
 
 const platformStoreRules = new Map([
@@ -42,7 +43,9 @@ const platformStoreRules = new Map([
     [167, { type: 'domain', domains: ['store.playstation.com'] }],
     [49, { type: 'domain', domains: ['xbox.com', 'microsoft.com'] }],
     [169, { type: 'domain', domains: ['xbox.com', 'microsoft.com'] }],
-    [130, { type: 'domain', domains: ['nintendo'] }]
+    [130, { type: 'domain', domains: ['nintendo'] }],
+    // NEU
+    [508, { type: 'domain', domains: ['nintendo'] }]
 ]);
 
 
@@ -223,9 +226,6 @@ function displayGames(games, isTodayFilter = false) {
     const fragment = document.createDocumentFragment();
 
     games.forEach(game => {
-
-console.log(game);
-
         const placeholderSVG = 'data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" width="280" height="200" viewBox="0 0 280 200"%3e%3crect fill="%232a2a2a" width="100%" height="100%"/%3e%3ctext fill="%23666" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="16" font-family="sans-serif"%3eKein Cover%3c/text%3e%3c/svg%3e';
         const coverUrl = game.cover ? game.cover.url.replace('t_thumb', 't_cover_big') : placeholderSVG;
 

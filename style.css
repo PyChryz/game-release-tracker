@@ -250,7 +250,9 @@ h1 {
 .fa-playstation { color: #0070d1; }
 .fa-xbox { color: #107c10; }
 .fa-windows { color: #00a4ef; }
-.fa-gamepad { color: #e60012; }
+.nintendo-old { color: #e60012; }
+/* NEU */
+.nintendo-new { color: #888888; }
 
 
 /* =================================== */
