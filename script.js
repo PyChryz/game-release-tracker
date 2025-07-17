@@ -44,7 +44,7 @@ const loader = document.getElementById('loader');
 // ===================================
 document.addEventListener('DOMContentLoaded', () => {
     // Referenzen zu den DOM-Elementen holen
-    const siteLogo = document.getElementById('site-logo-img'); // NEU
+    const siteLogo = document.getElementById('site-logo-img'); 
     const lightLogoSrc = './icon/GRT-logo3transparent.png'; // Pfad zum hellen Logo
     const darkLogoSrc = './icon/GRT-logo3transparent-dark.png'; // Pfad zum dunklen Logo
 
