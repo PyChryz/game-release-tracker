@@ -1,55 +1,52 @@
+/* =================================== */
+/* == Basis-Layout & Globale Stile == */
+/* =================================== */
 body {
     background-color: #1a1a1a;
     color: #f0f0f0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     padding: 20px;
+    transition: background-color 0.3s, color 0.3s;
 }
 
 h1 {
     text-align: center;
     color: #9146ff;
-    cursor: pointer;
 }
 
+/* =================================== */
+/* == Header & Logo == */
+/* =================================== */
 .site-header {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 15px; /* Abstand zwischen Logo und Text */
+    gap: 15px;
     margin-bottom: 20px;
+    position: relative;
 }
 
 .site-logo {
-    height: 100px; /* Höhe des Logos anpassen */
+    height: 50px;
     width: auto;
 }
 
-/* Verhindert, dass die h1-Überschrift zu viel eigenen Abstand hat */
 .site-header h1 {
     margin: 0;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.site-header h1:hover {
+    color: #a970ff;
 }
 
-.loader {
-  border: 5px solid #333; /* Hellerer Rand des Kreises */
-  border-top: 5px solid #9146ff; /* Die Farbe, die sich dreht */
-  border-radius: 50%;
-  width: 50px;
-  height: 50px;
-  animation: spin 1s linear infinite;
-  margin: 100px auto; /* Zentriert den Spinner */
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* Suchleiste */
+/* =================================== */
+/* == Suche & Filter == */
+/* =================================== */
 .search-container {
     display: flex;
     justify-content: center;
-    margin-bottom: 40px;
-    gap: 10px;
+    margin-bottom: 20px;
 }
 
 #search-input {
@@ -62,59 +59,92 @@ h1 {
     font-size: 1rem;
 }
 
-/* Spiele-Grid */
+#platform-filter {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 30px;
+}
+
+#platform-filter label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9rem;
+    background-color: #2a2a2a;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+#platform-filter input[type="checkbox"] {
+    accent-color: #9146ff;
+}
+
+/* =================================== */
+/* == Spiele-Grid & Karten == */
+/* =================================== */
 #games-container {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     gap: 25px;
 }
 
-/* Spiele-Karte */
+.info-text {
+    text-align: center;
+    color: #ccc;
+    font-size: 1.2rem;
+    grid-column: 1 / -1;
+}
+
 .game-card {
     background-color: #2a2a2a;
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-    transition: transform 0.2s ease-in-out;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 
 .game-card:hover {
     transform: scale(1.03);
-}
-
-.game-image {
-    max-width: 100%;
-    max-height: 100%;
-    height: 100%; /* Höhe an den Container anpassen */
-    object-fit: contain;
-    position: relative; /* Damit es über dem unscharfen Hintergrund liegt */
-    z-index: 2;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
 }
 
 .game-image-container {
-    height: 200px; /* Die Höhe des Bildbereichs wird hier definiert */
+    height: 200px;
     width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden; /* Wichtig, damit der unscharfe Rand nicht übersteht */
+    overflow: hidden;
     position: relative;
-    background-color: #1a1a1a; /* Fallback-Farbe */
-    background-size: cover; /* Zoomt das Hintergrundbild */
+    background-color: #1a1a1a;
+    background-size: cover;
     background-position: center;
 }
 
 .game-image-container::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: inherit; /* Erbt das Hintergrundbild vom Elternelement */
-    filter: blur(15px) brightness(0.6); /* Stärke des Weichzeichners und Abdunklung */
-    transform: scale(1.2); /* Verhindert hässliche Ränder durch den Weichzeichner */
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: inherit;
+    filter: blur(15px) brightness(0.6);
+    transform: scale(1.2);
     z-index: 1;
+}
+
+.game-image {
+    max-width: 100%;
+    max-height: 100%;
+    height: 100%;
+    object-fit: contain;
+    position: relative;
+    z-index: 2;
+}
+
+.card-content {
+    padding: 15px;
 }
 
 .card-header {
@@ -124,59 +154,60 @@ h1 {
     gap: 10px;
 }
 
-.platform-icons {
-    font-size: 1.1rem;
-    display: flex;
-    gap: 8px;
-    /* Abstand zwischen den Icons */
-}
-
-/*
- .platform-icons i { 
-   // Allgemeiner stil für alle Plattform-Icons
-    color: #a9a9a9; 
-} 
-*/
-
-/* Spezifische Farben für die Marken */
-.fa-playstation {
-    color: #0070d1;
-}
-
-.fa-xbox {
-    color: #107c10;
-}
-
-.fa-windows {
-    color: #00a4ef;
-}
-
-.fa-gamepad { /* Nintendo icon */
-    color: #e60012;
-}
-
-.card-content {
-    padding: 15px;
-}
-
 .game-title {
     font-size: 1.2rem;
     margin: 0 0 10px 0;
 }
 
 .release-date {
-    font-size: 0.9rem;
-    color: #ccc;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #bbbbbb;
+    margin-top: 5px;
 }
 
 .countdown-timer {
-    font-size: 1.1rem;
-    font-weight: bold;
-    color: #a970ff;
-    margin-top: 15px;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: 10px;
+    color: #ffa500;
+    background-color: #1f1f1f;
+    padding: 5px 10px;
+    border-radius: 6px;
+    display: inline-block;
 }
 
-/* "Mehr laden"-Button */
+.platform-icons {
+    font-size: 1.1rem;
+    display: flex;
+    gap: 8px;
+}
+
+.fa-playstation { color: #0070d1; }
+.fa-xbox { color: #107c10; }
+.fa-windows { color: #00a4ef; }
+.fa-gamepad { color: #e60012; }
+
+
+/* =================================== */
+/* == Lade-Spinner & Buttons == */
+/* =================================== */
+.loader {
+    border: 5px solid #333;
+    border-top: 5px solid #9146ff;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin: 100px auto;
+    display: none;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
 .button-container {
     text-align: center;
     padding: 40px 0;
@@ -198,22 +229,9 @@ h1 {
     background-color: #7a2de0;
 }
 
-
-/* Stil für Impressum & Datenschutz-Seite */
-.legal-container {
-    max-width: 800px;
-    margin: 40px auto;
-    padding: 20px;
-    background-color: #2a2a2a;
-    border-radius: 8px;
-    line-height: 1.7;
-}
-
-.legal-container a {
-    color: #9146ff;
-}
-
-/* Stil für den Footer */
+/* =================================== */
+/* == Footer & Rechtliches == */
+/* =================================== */
 footer {
     text-align: center;
     padding: 40px 20px 20px 20px;
@@ -228,6 +246,81 @@ footer a {
 
 footer a:hover {
     text-decoration: underline;
+}
+
+.legal-container {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 20px;
+    background-color: #2a2a2a;
+    border-radius: 8px;
+    line-height: 1.7;
+}
+
+.legal-container a {
+    color: #9146ff;
+}
+
+/* =================================== */
+/* == Dark/Light Mode & Cookie Banner == */
+/* =================================== */
+#theme-toggle {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: none;
+    border: 2px solid #9146ff;
+    color: #9146ff;
+    padding: 5px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+#theme-toggle:hover {
+    background-color: #9146ff;
+    color: white;
+}
+
+.light-mode {
+    background-color: #f4f6f8;
+    color: #1a1a1a;
+}
+.light-mode .game-card,
+.light-mode #platform-filter label {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+.light-mode #search-input {
+    background-color: #ffffff;
+    border-color: #ccc;
+}
+.light-mode .countdown-timer {
+    color: #d9480f;
+    background-color: #f1f3f5;
+    font-weight: 700;
+}
+.light-mode .site-header h1 {
+    color: #8227e0;
+}
+.light-mode .site-header h1:hover {
+    color: #5d1b9c;
+}
+.light-mode footer a {
+    color: #555;
+}
+.light-mode .legal-container {
+    background-color: #ffffff;
+}
+.light-mode .fa-playstation { color: #006fcd; }
+.light-mode .fa-xbox { color: #0e7a0e; }
+.light-mode .fa-windows { color: #0078d4; }
+.light-mode .fa-gamepad { color: #d60012; }
+
+.light-mode .info-text {
+    color: #555;
 }
 
 /* Versteckt den permanenten "Cookie Policy"-Reiter */

@@ -5,27 +5,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Game Release Tracker</title>
-    <link rel="icon" type="image/png" href="./icon/favicon/favicon-96x96.png" sizes="96x96" />
-    <link rel="icon" type="image/svg+xml" href="./icon/favicon/favicon.svg" />
-    <link rel="shortcut icon" href="./icon/favicon/favicon.ico" />
-    <link rel="apple-touch-icon" sizes="180x180" href="./icon/favicon/apple-touch-icon.png" />
-    <link rel="manifest" href="./icon/favicon/site.webmanifest" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./icon/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="./icon/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./icon/favicon/favicon-16x16.png">
+    <link rel="manifest" href="./icon/favicon/site.webmanifest">
     <link rel="stylesheet" href="./style.css">
     <link rel="stylesheet" href="./fontawesome/css/all.min.css">
-    <script src="./script.js" defer></script>
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.js" data-cfasync="false"></script>
+    <script src="./script.js" defer></script>
 </head>
 
 <body>
     <header class="site-header">
-    <a href="./index.html"><img src="./icon/GRT-logo3transparent.png" alt="Game Release Tracker Logo" class="site-logo"></a>
-    <h1 id="main-title">Game Release Tracker</h1>
-</header>
+        <a href="./index.html"><img src="./icon/GRT-logo3transparent.png" alt="Game Release Tracker Logo" class="site-logo" id="site-logo-img"></a>
+        <h1 id="main-title">Game Release Tracker</h1>
+    </header>
+
+    <button id="theme-toggle">🌗</button>
 
     <form id="search-form" class="search-container">
         <input type="text" id="search-input" placeholder="Suche nach einem Spiel...">
     </form>
+
+    <div id="platform-filter">
+        <label><input type="checkbox" value="6"> PC</label>
+        <label><input type="checkbox" value="169"> Xbox Series X|S</label>
+        <label><input type="checkbox" value="49"> Xbox One</label>
+        <label><input type="checkbox" value="167"> PlayStation 5</label>
+        <label><input type="checkbox" value="48"> PlayStation 4</label>
+        <label><input type="checkbox" value="130"> Switch</label>
+    </div>
 
     <div id="loader" class="loader"></div>
     <div id="games-container"></div>
@@ -35,11 +45,8 @@
     </div>
 
     <footer>
-       
-    <a href="impressum.html">Impressum</a> &nbsp;|&nbsp; <a href="datenschutz.html">Datenschutz</a>
-
+        <a href="impressum.html">Impressum</a> &nbsp;|&nbsp; <a href="datenschutz.html">Datenschutz</a>
     </footer>
 
 </body>
-
 </html>
