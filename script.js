@@ -293,6 +293,7 @@ window.addEventListener("load", function(){
       },
       "theme": "classic",
       "position": "bottom",
+      "revokable": false,
       "type": "opt-in",
       "content": {
         "message": "Wir würden gerne Cookies für Analyse-Zwecke verwenden, um die Webseite zu verbessern. Stimmst du dem zu?",
