@@ -34,7 +34,7 @@ const platformIconMap = {
     48: '<i class="fa-brands fa-playstation"></i>',
     167: '<i class="fa-brands fa-playstation"></i>',
     130: '<i class="fas fa-gamepad"></i>',
-    390: '<i class="fas fa-gamepad"></i>' // Icon für Switch 2 (kann angepasst werden)
+    390: '<i class="fas fa-gamepad"></i>' // NEU: Icon für Switch 2
 };
 
 const platformStoreRules = new Map([
@@ -44,7 +44,7 @@ const platformStoreRules = new Map([
     [49, { type: 'domain', domains: ['xbox.com', 'microsoft.com'] }],
     [169, { type: 'domain', domains: ['xbox.com', 'microsoft.com'] }],
     [130, { type: 'domain', domains: ['nintendo'] }],
-    [390, { type: 'domain', domains: ['nintendo'] }] // Regel für Switch 2
+    [390, { type: 'domain', domains: ['nintendo'] }] // NEU: Store-Regel für Switch 2
 ]);
 
 
@@ -121,12 +121,10 @@ function fetchAndDisplayGames() {
 // ===================================
 function fetchGamesFromAPI(offset, query = '', platformIds = new Set(), isTodayFilter) {
     const conditions = [];
-    // Sortierung ist jetzt komplexer und wird innerhalb der Logik gesetzt.
     let sort = 'sort first_release_date asc;';
 
     const hasPlatformFilter = platformIds.size > 0;
 
-    // A) Wenn Plattformfilter aktiv ist, muss die Abfrage anders aufgebaut werden
     if (hasPlatformFilter) {
         const platformList = [...platformIds].join(',');
         let dateClause;
@@ -143,10 +141,8 @@ function fetchGamesFromAPI(offset, query = '', platformIds = new Set(), isTodayF
             dateClause = `date > ${nowUnix}`;
         }
         
-        // Baut die verschachtelte Abfrage für release_dates
         conditions.push(`(release_dates = {* where ${dateClause} & platform = (${platformList}) *})`);
         
-    // B) Ohne Plattformfilter bleibt die Logik einfacher
     } else {
         if (isTodayFilter) {
             const now = new Date();
