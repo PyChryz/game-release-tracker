@@ -323,66 +323,66 @@ function getStoreLink(websites, activeFilters) {
     const STORE_GOG = 17;
     const STORE_NINTENDO = 18;
 
-
     // Helper-Funktion, die einen Link anhand der Store-Kategorie findet
     const findStoreLinkByCategory = (categoryId) => {
         const site = websites.find(s => s.category === categoryId);
         return site ? site.url : null;
     };
 
-    // Wenn Filter aktiv sind, suche gezielt nach dem passenden Store
+    // LOGIK FÜR AKTIVE FILTER
     if (activeFilters.size > 0) {
+        let storeLink = null;
+
         // Prüfe auf PlayStation
         if (activeFilters.has(167) || activeFilters.has(48)) {
-            const psLink = findStoreLinkByCategory(STORE_PLAYSTATION);
-            if (psLink) return psLink; // Store leitet selbst auf /de-de weiter
+            storeLink = findStoreLinkByCategory(STORE_PLAYSTATION);
         }
-        // ✅ Prüfe auf Xbox (jetzt mit korrekter Kategorie-ID)
-        if (activeFilters.has(169) || activeFilters.has(49)) {
-            const xboxLink = findStoreLinkByCategory(STORE_XBOX);
-            if (xboxLink) return xboxLink; // Store leitet selbst auf /de-DE weiter
+        // Prüfe auf Xbox
+        else if (activeFilters.has(169) || activeFilters.has(49)) {
+            storeLink = findStoreLinkByCategory(STORE_XBOX);
         }
         // Prüfe auf Nintendo
-        if (activeFilters.has(130)) {
-            const nintendoLink = findStoreLinkByCategory(STORE_NINTENDO);
-            if (nintendoLink) return nintendoLink; // Store leitet selbst weiter
+        else if (activeFilters.has(130)) {
+            storeLink = findStoreLinkByCategory(STORE_NINTENDO);
         }
-        // Prüfe auf PC
-        if (activeFilters.has(6)) {
+        // Prüfe auf PC (hier können mehrere Stores relevant sein)
+        else if (activeFilters.has(6)) {
             const steamLink = findStoreLinkByCategory(STORE_STEAM);
             if (steamLink) {
-                // Nur bei Steam fügen wir den Sprachparameter hinzu, da dies zuverlässig funktioniert
                 const url = new URL(steamLink);
                 url.searchParams.set('l', 'german');
-                return url.toString();
+                storeLink = url.toString();
+            } else {
+                // Suche nach Epic oder GOG, wenn kein Steam-Link da ist
+                storeLink = findStoreLinkByCategory(STORE_EPIC) || findStoreLinkByCategory(STORE_GOG);
             }
-            const epicLink = findStoreLinkByCategory(STORE_EPIC);
-            if (epicLink) return epicLink;
-
-            const gogLink = findStoreLinkByCategory(STORE_GOG);
-            if (gogLink) return gogLink;
         }
+        
+        // ✅ WICHTIGSTE ÄNDERUNG:
+        // Gib das Ergebnis der Filter-Suche direkt zurück.
+        // Die Funktion stoppt hier, wenn ein Filter aktiv war.
+        return storeLink;
     }
 
-    // FALLBACK-LOGIK: Wenn kein Filter aktiv ist, nimm den wichtigsten verfügbaren Link (Priorität: Steam)
+    // FALLBACK-LOGIK (wird jetzt nur noch ausgeführt, wenn KEIN Filter aktiv ist)
     const steamUrl = findStoreLinkByCategory(STORE_STEAM);
     if (steamUrl) {
         const url = new URL(steamUrl);
         url.searchParams.set('l', 'german');
         return url.toString();
     }
-    // Nimm den nächsten verfügbaren Link
-    const fallbackUrls = [
+    
+    // Nimm den nächstbesten Store-Link in dieser Reihenfolge
+    const fallbackStoreUrls = [
         findStoreLinkByCategory(STORE_PLAYSTATION),
         findStoreLinkByCategory(STORE_XBOX),
         findStoreLinkByCategory(STORE_NINTENDO),
         findStoreLinkByCategory(STORE_EPIC),
         findStoreLinkByCategory(STORE_GOG),
-        findStoreLinkByCategory(STORE_OFFICIAL)
+        findStoreLinkByCategory(STORE_OFFICIAL) // Offizielle Seite als letzte Option
     ];
-    
-    // Gib den ersten gültigen Link aus der Fallback-Liste zurück
-    return fallbackUrls.find(url => url !== null) || null;
+
+    return fallbackStoreUrls.find(url => url !== null) || null;
 }
 
 // ===================================
