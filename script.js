@@ -159,6 +159,11 @@ function getBestReleaseTimestamp(releaseDates, fallbackTimestamp) {
     return fallbackTimestamp;
 }
 
+// Prüft, ob ein Datum Mitternacht UTC ist
+function isMidnightUTC(date) {
+    return date.getUTCHours() === 0 && date.getUTCMinutes() === 0 && date.getUTCSeconds() === 0;
+}
+
 
 function displayGames(games) {
     const container = document.getElementById('games-container');
@@ -183,8 +188,18 @@ function displayGames(games) {
 
         const bestTimestamp = getBestReleaseTimestamp(game.release_dates, game.first_release_date);
         const releaseDate = bestTimestamp ? new Date(bestTimestamp * 1000) : null;
-
         const storeLink = getStoreLink(game.websites);
+
+        let releaseDateString = 'Datum unbekannt';
+        if (releaseDate) {
+            if (isMidnightUTC(releaseDate)) {
+                // Nur das Datum anzeigen, wenn keine genaue Uhrzeit vorliegt
+                releaseDateString = 'Erscheint am: ' + releaseDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            } else {
+                // Datum und Uhrzeit anzeigen, wenn eine genaue Zeit vorliegt
+                releaseDateString = 'Erscheint am: ' + releaseDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' Uhr';
+            }
+        }
 
         const imageContainerTag = storeLink ? 'a' : 'div';
         const imageElement = `
@@ -208,14 +223,12 @@ function displayGames(games) {
                     <h2 class="game-title">${game.name}</h2>
                     <div class="platform-icons">${platformIcons}</div>
                 </div>
-                <p class="release-date">${releaseDate ? 'Erscheint am: ' + releaseDate.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' Uhr' : 'Datum unbekannt'}</p>
-                <div class="countdown-timer" id="timer-${game.id}"></div>
+                <p class="release-date">${releaseDateString}</p> <div class="countdown-timer" id="timer-${game.id}"></div>
             </div>
         `;
         container.appendChild(gameCard);
 
         if (releaseDate && releaseDate > new Date()) {
-            // Wir übergeben den besten Timestamp an den Countdown
             startCountdown(`timer-${game.id}`, bestTimestamp);
         }
     });
