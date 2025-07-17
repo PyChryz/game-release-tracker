@@ -1,9 +1,37 @@
 /* =================================== */
-/* == Basis-Layout & Globale Stile == */
+/* == Variablen & Basis-Layout     == */
 /* =================================== */
+:root {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2a2a2a;
+    --text-primary: #f0f0f0;
+    --text-secondary: #ccc;
+    --color-accent: #9146ff;
+    --color-accent-hover: #7a2de0;
+    --border-color: #333;
+    --card-shadow: rgba(0, 0, 0, 0.3);
+    --card-shadow-hover: rgba(0, 0, 0, 0.4);
+    --countdown-bg: #1f1f1f;
+    --countdown-text: #ffa500;
+}
+
+.light-mode {
+    --bg-primary: #f4f6f8;
+    --bg-secondary: #ffffff;
+    --text-primary: #1a1a1a;
+    --text-secondary: #555;
+    --color-accent: #8227e0;
+    --color-accent-hover: #5d1b9c;
+    --border-color: #e0e0e0;
+    --card-shadow: rgba(0, 0, 0, 0.05);
+    --card-shadow-hover: rgba(0, 0, 0, 0.1);
+    --countdown-bg: #f1f3f5;
+    --countdown-text: #d9480f;
+}
+
 body {
-    background-color: #1a1a1a;
-    color: #f0f0f0;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     padding: 20px;
     transition: background-color 0.3s, color 0.3s;
@@ -11,16 +39,16 @@ body {
 
 h1 {
     text-align: center;
-    color: #9146ff;
+    color: var(--color-accent);
 }
 
 /* =================================== */
-/* == Header & Logo == */
+/* == Header & Logo                == */
 /* =================================== */
 .site-header {
     display: flex;
-    flex-direction: column; 
-    align-items: center;    
+    flex-direction: column;
+    align-items: center;
     gap: 10px;
     margin-bottom: 20px;
 }
@@ -35,12 +63,13 @@ h1 {
     cursor: pointer;
     transition: color 0.2s;
 }
+
 .site-header h1:hover {
-    color: #a970ff;
+    color: var(--color-accent-hover);
 }
 
 /* =================================== */
-/* == Suche & Filter == */
+/* == Suche & Filter               == */
 /* =================================== */
 .search-container {
     display: flex;
@@ -51,10 +80,10 @@ h1 {
 #search-input {
     width: 300px;
     padding: 10px;
-    border: 2px solid #333;
+    border: 2px solid var(--border-color);
     border-radius: 8px;
-    background-color: #2a2a2a;
-    color: white;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
     font-size: 1rem;
 }
 
@@ -71,18 +100,18 @@ h1 {
     align-items: center;
     gap: 6px;
     font-size: 0.9rem;
-    background-color: #2a2a2a;
+    background-color: var(--bg-secondary);
     padding: 6px 10px;
     border-radius: 6px;
     cursor: pointer;
 }
 
 #platform-filter input[type="checkbox"] {
-    accent-color: #9146ff;
+    accent-color: var(--color-accent);
 }
 
 /* =================================== */
-/* == Spiele-Grid & Karten == */
+/* == Spiele-Grid & Karten         == */
 /* =================================== */
 #games-container {
     display: grid;
@@ -92,22 +121,26 @@ h1 {
 
 .info-text {
     text-align: center;
-    color: #ccc;
+    color: var(--text-secondary);
     font-size: 1.2rem;
     grid-column: 1 / -1;
 }
 
 .game-card {
-    background-color: #2a2a2a;
+    background-color: var(--bg-secondary);
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 8px var(--card-shadow);
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.light-mode .game-card {
+    border: 1px solid var(--border-color);
 }
 
 .game-card:hover {
     transform: scale(1.03);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 6px 12px var(--card-shadow-hover);
 }
 
 .game-image-container {
@@ -118,7 +151,7 @@ h1 {
     justify-content: center;
     overflow: hidden;
     position: relative;
-    background-color: #1a1a1a;
+    background-color: var(--bg-primary);
     background-size: cover;
     background-position: center;
 }
@@ -126,7 +159,10 @@ h1 {
 .game-image-container::before {
     content: '';
     position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     background: inherit;
     filter: blur(15px) brightness(0.6);
     transform: scale(1.2);
@@ -169,8 +205,8 @@ h1 {
     font-size: 1rem;
     font-weight: 600;
     margin-top: 10px;
-    color: #ffa500;
-    background-color: #1f1f1f;
+    color: var(--countdown-text);
+    background-color: var(--countdown-bg);
     padding: 5px 10px;
     border-radius: 6px;
     display: inline-block;
@@ -189,11 +225,11 @@ h1 {
 
 
 /* =================================== */
-/* == Lade-Spinner & Buttons == */
+/* == Lade-Spinner & Buttons       == */
 /* =================================== */
 .loader {
-    border: 5px solid #333;
-    border-top: 5px solid #9146ff;
+    border: 5px solid var(--border-color);
+    border-top: 5px solid var(--color-accent);
     border-radius: 50%;
     width: 50px;
     height: 50px;
@@ -203,8 +239,12 @@ h1 {
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 .button-container {
@@ -213,7 +253,7 @@ h1 {
 }
 
 #load-more-btn {
-    background-color: #9146ff;
+    background-color: var(--color-accent);
     color: white;
     border: none;
     border-radius: 8px;
@@ -225,21 +265,21 @@ h1 {
 }
 
 #load-more-btn:hover {
-    background-color: #7a2de0;
+    background-color: var(--color-accent-hover);
 }
 
 /* =================================== */
-/* == Footer & Rechtliches == */
+/* == Footer & Rechtliches         == */
 /* =================================== */
 footer {
     text-align: center;
     padding: 40px 20px 20px 20px;
     margin-top: 20px;
-    border-top: 1px solid #333;
+    border-top: 1px solid var(--border-color);
 }
 
 footer a {
-    color: #ccc;
+    color: var(--text-secondary);
     text-decoration: none;
 }
 
@@ -251,25 +291,25 @@ footer a:hover {
     max-width: 800px;
     margin: 40px auto;
     padding: 20px;
-    background-color: #2a2a2a;
+    background-color: var(--bg-secondary);
     border-radius: 8px;
     line-height: 1.7;
 }
 
 .legal-container a {
-    color: #9146ff;
+    color: var(--color-accent);
 }
 
 /* =================================== */
-/* == Dark/Light Mode & Cookie Banner == */
+/* == Helferklassen & Sonstiges    == */
 /* =================================== */
 #theme-toggle {
     position: absolute;
     top: 20px;
     right: 20px;
     background: none;
-    border: 2px solid #9146ff;
-    color: #9146ff;
+    border: 2px solid var(--color-accent);
+    color: var(--color-accent);
     padding: 5px 12px;
     border-radius: 6px;
     cursor: pointer;
@@ -278,51 +318,23 @@ footer a:hover {
 }
 
 #theme-toggle:hover {
-    background-color: #9146ff;
+    background-color: var(--color-accent);
     color: white;
-}
-
-.light-mode {
-    background-color: #f4f6f8;
-    color: #1a1a1a;
-}
-.light-mode .game-card,
-.light-mode #platform-filter label {
-    background-color: #ffffff;
-    border: 1px solid #e0e0e0;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-.light-mode #search-input {
-    background-color: #ffffff;
-    border-color: #ccc;
-}
-.light-mode .countdown-timer {
-    color: #d9480f;
-    background-color: #f1f3f5;
-    font-weight: 700;
-}
-.light-mode .site-header h1 {
-    color: #8227e0;
-}
-.light-mode .site-header h1:hover {
-    color: #5d1b9c;
-}
-.light-mode footer a {
-    color: #555;
-}
-.light-mode .legal-container {
-    background-color: #ffffff;
-}
-.light-mode .fa-playstation { color: #006fcd; }
-.light-mode .fa-xbox { color: #0e7a0e; }
-.light-mode .fa-windows { color: #0078d4; }
-.light-mode .fa-gamepad { color: #d60012; }
-
-.light-mode .info-text {
-    color: #555;
 }
 
 /* Versteckt den permanenten "Cookie Policy"-Reiter */
 .cc-revoke {
     display: none !important;
+}
+
+/* Versteckt Elemente visuell, aber hält sie für Screenreader zugänglich */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
 }
