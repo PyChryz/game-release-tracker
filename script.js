@@ -119,9 +119,6 @@ function fetchAndDisplayGames() {
 // ===================================
 function fetchGamesFromAPI(offset, query = '', platformIds = new Set(), isTodayFilter) {
     const conditions = [];
-    
-    // *** KORREKTUR HIER ***
-    // Die Sortierung wird vereinheitlicht, um API-Fehler zu vermeiden.
     const sort = 'sort first_release_date asc;';
 
     if (isTodayFilter) {
@@ -132,23 +129,22 @@ function fetchGamesFromAPI(offset, query = '', platformIds = new Set(), isTodayF
         const startTs = Math.floor(startOfDay.getTime() / 1000);
         const endTs = Math.floor(endOfDay.getTime() / 1000);
 
-        conditions.push(`first_release_date >= ${startTs} & first_release_date <= ${endTs}`);
+        // *** KORREKTUR HIER: Jede Bedingung wird geklammert ***
+        conditions.push(`(first_release_date >= ${startTs} & first_release_date <= ${endTs})`);
     } else {
         const nowUnix = Math.floor(Date.now() / 1000);
-        conditions.push(`first_release_date > ${nowUnix}`);
+        conditions.push(`(first_release_date > ${nowUnix})`);
     }
 
     if (query) {
-        conditions.push(`name ~ *"${query}"*`);
+        conditions.push(`(name ~ *"${query}"*)`);
     }
     if (platformIds.size > 0) {
-        conditions.push(`platforms = (${[...platformIds].join(',')})`);
+        conditions.push(`(platforms = (${[...platformIds].join(',')}))`);
     }
 
     const whereClause = conditions.join(' & ');
     
-    // *** KORREKTUR HIER ***
-    // Das Feld "popularity" wird nicht mehr angefragt.
     const body = `
         fields name, cover.url, first_release_date, websites.*, platforms.id, platforms.name, release_dates.*;
         where ${whereClause};
