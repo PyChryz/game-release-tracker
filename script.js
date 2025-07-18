@@ -134,10 +134,11 @@ function fetchGamesFromAPI(offset, query = '', platformIds = new Set(), isTodayF
         const endOfTodayTs = Math.floor(endOfToday.getTime() / 1000);
         dateCondition = `(first_release_date >= ${startOfTodayTs} & first_release_date <= ${endOfTodayTs})`;
     } else {
-        const startOfTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
-        const startOfTomorrowTs = Math.floor(startOfTomorrow.getTime() / 1000);
-        dateCondition = `(first_release_date >= ${startOfTomorrowTs})`;
-    }
+    const startOfTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
+    const startOfTomorrowTs = Math.floor(startOfTomorrow.getTime() / 1000);
+    // Wir fragen die API direkt nach Spielen mit einem europäischen Release-Datum ab morgen.
+    dateCondition = `(release_dates.region = ${REGION_EUROPE} & release_dates.date >= ${startOfTomorrowTs})`; // [!code focus]
+}
     conditions.push(dateCondition);
     
     if (query) {
