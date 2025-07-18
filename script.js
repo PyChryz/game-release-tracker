@@ -242,15 +242,12 @@ function displayGames(games, isTodayFilter = false) {
         const relDate = bestTs ? new Date(bestTs * 1000) : null;
         let dateStr   = 'Datum unbekannt';
         
+        // KORREKTUR 1: In dieser Zeile wird jetzt IMMER das Datum angezeigt.
         if (relDate) {
-            if (isTodayFilter) {
-                dateStr = 'Release Heute!';
-            } else {
-                const opts = { day: '2-digit', month: '2-digit', year: 'numeric' };
-                const formattedDate = relDate.toLocaleDateString('de-DE', opts);
-                const prefix = (bestTs * 1000 <= Date.now()) ? 'Veröffentlicht am:' : 'Erscheint am:';
-                dateStr = `${prefix} ${formattedDate}`;
-            }
+            const opts = { day: '2-digit', month: '2-digit', year: 'numeric' };
+            const formattedDate = relDate.toLocaleDateString('de-DE', opts);
+            const prefix = (bestTs * 1000 <= Date.now()) ? 'Veröffentlicht am:' : 'Erscheint am:';
+            dateStr = `${prefix} ${formattedDate}`;
         }
 
         const storeLink   = getStoreLink(game);
@@ -276,11 +273,18 @@ function displayGames(games, isTodayFilter = false) {
 
         const timerEl = card.querySelector('.countdown-timer');
         
-        if (isTodayFilter || (bestTs && bestTs * 1000 <= Date.now())) {
-            timerEl.textContent = '🎉 Veröffentlicht!';
-        } else if (bestTs) {
+        // KORREKTUR 2: Die Logik für das untere Feld (Timer/Status).
+        if (isTodayFilter) {
+            // Bei heutigen Releases wird hier "Release Heute!" angezeigt.
+            timerEl.textContent = 'Release Heute!';
+        } else if (bestTs && bestTs * 1000 > Date.now()) {
+            // Bei zukünftigen Spielen startet der Countdown.
             countdownElements.push({ elementId: `timer-${game.id}`, timestamp: bestTs });
+        } else if (bestTs) { 
+            // Bei bereits vergangenen Spielen wird "Veröffentlicht!" angezeigt.
+            timerEl.textContent = '🎉 Veröffentlicht!';
         } else {
+            // Ohne Datum wird das Feld ausgeblendet.
             timerEl.style.display = 'none';
         }
     });
