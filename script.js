@@ -14,37 +14,37 @@ const appState = {
 };
 
 // Konstanten für die API
-const REGION_EUROPE = 2;
-const STORE_STEAM = 13;
-const STORE_EPIC = 16;
-const STORE_GOG = 17;
-const STORE_OFFICIAL = 1;
+const REGION_EUROPE   = 2;
+const STORE_STEAM     = 13;
+const STORE_EPIC      = 16;
+const STORE_GOG       = 17;
+const STORE_OFFICIAL  = 1;
 
 const storePriority = new Map([
-    [STORE_STEAM, 1],
-    [STORE_EPIC, 2],
-    [STORE_GOG, 3],
+    [STORE_STEAM,    1],
+    [STORE_EPIC,     2],
+    [STORE_GOG,      3],
     [STORE_OFFICIAL, 4]
 ]);
 
 const platformIconMap = {
-    6: '<i class="fa-brands fa-windows"></i>',
-    49: '<i class="fa-brands fa-xbox"></i>',
+    6:   '<i class="fa-brands fa-windows"></i>',
+    49:  '<i class="fa-brands fa-xbox"></i>',
     169: '<i class="fa-brands fa-xbox"></i>',
-    48: '<i class="fa-brands fa-playstation"></i>',
+    48:  '<i class="fa-brands fa-playstation"></i>',
     167: '<i class="fa-brands fa-playstation"></i>',
     130: '<i class="fas fa-gamepad nintendo-old"></i>',
     508: '<i class="fas fa-gamepad nintendo-new"></i>'
 };
 
 const platformStoreRules = new Map([
-    [6, { type: 'category', ids: [STORE_STEAM, STORE_EPIC, STORE_GOG] }],
-    [48, { type: 'domain', domains: ['store.playstation.com'] }],
-    [167, { type: 'domain', domains: ['store.playstation.com'] }],
-    [49, { type: 'domain', domains: ['xbox.com', 'microsoft.com'] }],
-    [169, { type: 'domain', domains: ['xbox.com', 'microsoft.com'] }],
-    [130, { type: 'domain', domains: ['nintendo'] }],
-    [508, { type: 'domain', domains: ['nintendo'] }]
+    [6,   { type: 'category', ids: [STORE_STEAM, STORE_EPIC, STORE_GOG] }],
+    [48,  { type: 'domain',   domains: ['store.playstation.com'] }],
+    [167, { type: 'domain',   domains: ['store.playstation.com'] }],
+    [49,  { type: 'domain',   domains: ['xbox.com', 'microsoft.com'] }],
+    [169, { type: 'domain',   domains: ['xbox.com', 'microsoft.com'] }],
+    [130, { type: 'domain',   domains: ['nintendo'] }],
+    [508, { type: 'domain',   domains: ['nintendo'] }]
 ]);
 
 
@@ -64,13 +64,13 @@ function debounce(fn, delay) {
 // HAUPTLOGIK & EVENT LISTENERS
 // ===================================
 document.addEventListener('DOMContentLoaded', () => {
-    const loadMoreButton = document.getElementById('load-more-btn');
-    const searchInput = document.getElementById('search-input');
-    const mainTitle = document.getElementById('main-title');
-    const searchForm = document.getElementById('search-form');
-    const toggleButton = document.getElementById('theme-toggle');
-    const platformFilterContainer = document.getElementById('platform-filter');
-    const todayFilterBtn = document.getElementById('today-filter-btn');
+    const loadMoreButton         = document.getElementById('load-more-btn');
+    const searchInput            = document.getElementById('search-input');
+    const mainTitle              = document.getElementById('main-title');
+    const searchForm             = document.getElementById('search-form');
+    const toggleButton           = document.getElementById('theme-toggle');
+    const platformFilterContainer= document.getElementById('platform-filter');
+    const todayFilterBtn         = document.getElementById('today-filter-btn');
 
     toggleButton?.addEventListener('click', () => {
         document.body.classList.toggle('light-mode');
@@ -88,9 +88,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     searchInput.addEventListener('input', debounce(() => {
-        const query = searchInput.value.trim();
+        appState.searchQuery = searchInput.value.trim();
         appState.offset = 0;
-        appState.searchQuery = query;
         fetchAndDisplayGames();
     }, 400));
 
@@ -108,6 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchAndDisplayGames();
     });
 
+    // Initialer Aufruf
     fetchAndDisplayGames();
 });
 
@@ -116,47 +116,57 @@ function fetchAndDisplayGames() {
     fetchGamesFromAPI(offset, searchQuery, platformFilters, isTodayFilterActive);
 }
 
+
 // ===================================
 // API-FUNKTIONEN
 // ===================================
 function fetchGamesFromAPI(offset, query = '', platformIds = new Set(), isTodayFilter) {
-    const conditions = [];
-    const sort = 'sort first_release_date asc;';
-    const hasPlatformFilter = platformIds.size > 0;
+    const conditions       = [];
+    const sort             = 'sort first_release_date asc;';
+    const hasPlatformFilter= platformIds.size > 0;
 
-    // =================================================================
-    // ÜBERARBEITET FÜR BESSERE PERFORMANCE
-    // Wir filtern jetzt immer auf dem schnelleren `first_release_date`
-    // und `platforms`-Feld, um Timeouts zu vermeiden.
-    // =================================================================
+    // === Datumskondition ===
     let dateCondition;
     if (isTodayFilter) {
-        const now = new Date();
-        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-        const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-        const startTs = Math.floor(startOfDay.getTime() / 1000);
-        const endTs = Math.floor(endOfDay.getTime() / 1000);
-        dateCondition = `(first_release_date >= ${startTs} & first_release_date <= ${endTs})`;
+        // Heutige Releases
+        const now         = new Date();
+        const startOfDay  = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+        const endOfDay    = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+        const startTs     = Math.floor(startOfDay.getTime() / 1000);
+        const endTs       = Math.floor(endOfDay.getTime() / 1000);
+        dateCondition     = `(first_release_date >= ${startTs} & first_release_date <= ${endTs})`;
     } else {
-        const nowUnix = Math.floor(Date.now() / 1000);
-        dateCondition = `(first_release_date > ${nowUnix})`;
+        // Kommende Releases ab Mitternacht HEUTE
+        const today        = new Date();
+        today.setHours(0, 0, 0, 0);
+        const startOfTodayTs = Math.floor(today.getTime() / 1000);
+        dateCondition     = `(first_release_date >= ${startOfTodayTs})`;
     }
     conditions.push(dateCondition);
 
+    // === Suche ===
     if (query) {
         conditions.push(`(name ~ *"${query}"*)`);
     }
+
+    // === Plattform-Filter ===
     if (hasPlatformFilter) {
         conditions.push(`(platforms = (${[...platformIds].join(',')}))`);
     }
-    // =================================================================
-    // ENDE DER ÄNDERUNG
-    // =================================================================
 
     const whereClause = conditions.join(' & ');
-    
+
+    // Felder: ID hinzugefügt, damit Timer-Elemente eindeutig sind
     const body = `
-        fields name, cover.url, first_release_date, websites.*, platforms.id, platforms.name, release_dates.*;
+        fields
+            id,
+            name,
+            cover.url,
+            first_release_date,
+            websites.*,
+            platforms.id,
+            platforms.name,
+            release_dates.*;
         where ${whereClause};
         ${sort}
         limit ${gamesPerLoad};
@@ -166,45 +176,49 @@ function fetchGamesFromAPI(offset, query = '', platformIds = new Set(), isTodayF
     executeFetch(body, query, isTodayFilter);
 }
 
-
 function executeFetch(body, query = '', isTodayFilter = false) {
-    const loader = document.getElementById('loader');
+    const loader         = document.getElementById('loader');
     const gamesContainer = document.getElementById('games-container');
-    const loadMoreButton = document.getElementById('load-more-btn');
+    const loadMoreBtn    = document.getElementById('load-more-btn');
 
     if (appState.offset === 0) {
         gamesContainer.innerHTML = '';
-        loader.style.display = 'block';
+        loader.style.display     = 'block';
     }
-    loadMoreButton.style.display = 'none';
+    loadMoreBtn.style.display = 'none';
 
-    fetch('/api/igdb', { method: 'POST', body })
-        .then(res => {
-            if (!res.ok) throw new Error(`HTTP-Fehler ${res.status}`);
-            return res.json();
-        })
-        .then(games => {
-            loader.style.display = 'none';
-            if (games.length === 0 && appState.offset === 0) {
-                let infoMsg = `Keine Spiele für die aktuelle Auswahl gefunden.`;
-                if (isTodayFilter) {
-                    infoMsg = query 
-                        ? `Keine heute erschienenen Spiele für "${query}" gefunden.`
-                        : `Heute sind anscheinend keine Spiele für die gewählten Plattformen erschienen.`;
-                } else if(query) {
-                     infoMsg = `Keine kommenden Spiele für „${query}“ gefunden.`;
-                }
-                gamesContainer.innerHTML = `<p class="info-text">${infoMsg}</p>`;
-                return;
+    fetch('/api/igdb', {
+        method: 'POST',
+        body
+    })
+    .then(res => {
+        if (!res.ok) throw new Error(`HTTP-Fehler ${res.status}`);
+        return res.json();
+    })
+    .then(games => {
+        loader.style.display = 'none';
+
+        if (games.length === 0 && appState.offset === 0) {
+            let msg = 'Keine Spiele für die aktuelle Auswahl gefunden.';
+            if (isTodayFilter) {
+                msg = query
+                    ? `Keine heute erschienenen Spiele für "${query}" gefunden.`
+                    : 'Heute sind anscheinend keine Spiele für die gewählten Plattformen erschienen.';
+            } else if (query) {
+                msg = `Keine kommenden Spiele für „${query}“ gefunden.`;
             }
-            displayGames(games, isTodayFilter);
-            loadMoreButton.style.display = games.length < gamesPerLoad ? 'none' : 'inline-block';
-        })
-        .catch(err => {
-            console.error('API-Fehler:', err);
-            loader.style.display = 'none';
-            gamesContainer.innerHTML = `<p class="info-text">Ein Fehler ist aufgetreten.</p>`;
-        });
+            gamesContainer.innerHTML = `<p class="info-text">${msg}</p>`;
+            return;
+        }
+
+        displayGames(games, isTodayFilter);
+        loadMoreBtn.style.display = (games.length < gamesPerLoad) ? 'none' : 'inline-block';
+    })
+    .catch(err => {
+        console.error('API-Fehler:', err);
+        loader.style.display = 'none';
+        gamesContainer.innerHTML = `<p class="info-text">Ein Fehler ist aufgetreten.</p>`;
+    });
 }
 
 
@@ -213,6 +227,7 @@ function executeFetch(body, query = '', isTodayFilter = false) {
 // ===================================
 function displayGames(games, isTodayFilter = false) {
     const gamesContainer = document.getElementById('games-container');
+
     if (appState.offset === 0) {
         countdownElements.length = 0;
         if (countdownIntervalId) {
@@ -224,28 +239,32 @@ function displayGames(games, isTodayFilter = false) {
     const fragment = document.createDocumentFragment();
 
     games.forEach(game => {
-        const placeholderSVG = 'data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" width="280" height="200" viewBox="0 0 280 200"%3e%3crect fill="%232a2a2a" width="100%" height="100%"/%3e%3ctext fill="%23666" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="16" font-family="sans-serif"%3eKein Cover%3c/text%3e%3c/svg%3e';
-        const coverUrl = game.cover ? game.cover.url.replace('t_thumb', 't_cover_big') : placeholderSVG;
+        const placeholderSVG = 'data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" width="280" height="200"%3e%3crect fill="%232a2a2a" width="100%" height="100%"/%3e%3ctext fill="%23666" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="16"%3eKein Cover%3c/text%3e%3c/svg%3e';
+        const coverUrl     = game.cover
+            ? game.cover.url.replace('t_thumb', 't_cover_big')
+            : placeholderSVG;
 
-        const uniquePlatformIcons = new Set();
+        const icons = new Set();
         (game.platforms || []).forEach(p => {
-            if (platformIconMap[p.id]) uniquePlatformIcons.add(platformIconMap[p.id]);
+            if (platformIconMap[p.id]) icons.add(platformIconMap[p.id]);
         });
-        const platformIcons = [...uniquePlatformIcons].join(' ');
+        const platformIcons = [...icons].join(' ');
 
         const bestTs = getBestReleaseTimestamp(game.release_dates, game.first_release_date);
         const relDate = bestTs ? new Date(bestTs * 1000) : null;
         let dateStr = 'Datum unbekannt';
         if (relDate) {
-            const optsDate = { day: '2-digit', month: '2-digit', year: 'numeric' };
-            dateStr = isTodayFilter 
-                ? `Heute erschienen!` 
-                : `Erscheint am: ${relDate.toLocaleDateString('de-DE', optsDate)}`;
+            const opts = { day: '2-digit', month: '2-digit', year: 'numeric' };
+            dateStr = isTodayFilter
+                ? 'Heute erschienen!'
+                : `Erscheint am: ${relDate.toLocaleDateString('de-DE', opts)}`;
         }
 
-        const storeLink = getStoreLink(game);
+        const storeLink  = getStoreLink(game);
         const wrapperTag = storeLink ? 'a' : 'div';
-        const wrapperAttrs = storeLink ? `href="${storeLink}" target="_blank" rel="noopener noreferrer"` : '';
+        const wrapperAttrs = storeLink
+            ? `href="${storeLink}" target="_blank" rel="noopener noreferrer"`
+            : '';
 
         const card = document.createElement('div');
         card.classList.add('game-card');
@@ -263,25 +282,26 @@ function displayGames(games, isTodayFilter = false) {
             </div>
         `;
         fragment.appendChild(card);
-        
-        const countdownTimerEl = card.querySelector('.countdown-timer');
 
+        const timerEl = card.querySelector('.countdown-timer');
         if (isTodayFilter) {
-            countdownTimerEl.innerHTML = '🎉 Veröffentlicht!';
+            timerEl.innerHTML = '🎉 Veröffentlicht!';
         } else if (relDate && relDate > new Date()) {
-            const dateString = relDate.toISOString().slice(0, 10);
-            const localMidnight = new Date(dateString + "T00:00:00");
-            const localTimestamp = localMidnight.getTime() / 1000;
-            
-            countdownElements.push({ elementId: `timer-${game.id}`, timestamp: localTimestamp });
+            // Countdown bis lokale Mitternacht des Release-Datums
+            const midnight = new Date(relDate.getFullYear(), relDate.getMonth(), relDate.getDate());
+            const tsMidnight = Math.floor(midnight.getTime() / 1000);
+            countdownElements.push({
+                elementId: `timer-${game.id}`,
+                timestamp: tsMidnight
+            });
         } else {
-             if (countdownTimerEl) countdownTimerEl.style.display = 'none';
+            timerEl.style.display = 'none';
         }
     });
 
     gamesContainer.appendChild(fragment);
 
-    if (!countdownIntervalId && countdownElements.length > 0) {
+    if (!countdownIntervalId && countdownElements.length) {
         countdownIntervalId = setInterval(updateCountdowns, 1000);
     }
 }
@@ -291,41 +311,43 @@ function updateCountdowns() {
     for (let i = countdownElements.length - 1; i >= 0; i--) {
         const { elementId, timestamp } = countdownElements[i];
         const el = document.getElementById(elementId);
+
         if (!el) {
             countdownElements.splice(i, 1);
             continue;
         }
-        const diff = timestamp * 1000 - now;
+
+        const diff = (timestamp * 1000) - now;
         if (diff <= 0) {
             el.innerHTML = '🎉 Veröffentlicht!';
             countdownElements.splice(i, 1);
             continue;
         }
-        const d = Math.floor(diff / 86400000);
-        const h = Math.floor((diff % 86400000) / 3600000);
-        const m = Math.floor((diff % 3600000) / 60000);
-        const s = Math.floor((diff % 60000) / 1000);
-        el.innerHTML = `${d}T ${h}h ${m}m ${s}s`;
+
+        const days    = Math.floor(diff / 86400000);
+        const hours   = Math.floor((diff % 86400000) / 3600000);
+        const minutes = Math.floor((diff % 3600000) / 60000);
+        const seconds = Math.floor((diff % 60000) / 1000);
+
+        el.innerHTML = `${days}T ${hours}h ${minutes}m ${seconds}s`;
     }
-    if (countdownElements.length === 0 && countdownIntervalId) {
+
+    if (!countdownElements.length && countdownIntervalId) {
         clearInterval(countdownIntervalId);
         countdownIntervalId = null;
     }
 }
 
+
 // ===================================
 // HILFSFUNKTIONEN
 // ===================================
 function resetToUpcomingView() {
-    const searchInput = document.getElementById('search-input');
-    const todayFilterBtn = document.getElementById('today-filter-btn');
-    searchInput.value = '';
-    
+    document.getElementById('search-input').value = '';
     appState.isTodayFilterActive = false;
-    if(todayFilterBtn) todayFilterBtn.classList.remove('active');
-    
+    document.getElementById('today-filter-btn')?.classList.remove('active');
     appState.searchQuery = '';
-    appState.offset = 0;
+    appState.offset      = 0;
     fetchAndDisplayGames();
 }
 
@@ -339,65 +361,61 @@ function localizeUrl(urlString, gameName) {
     if (!urlString) return null;
 
     if (urlString.includes('nintendo.com')) {
-        const encodedGameName = encodeURIComponent(gameName);
-        return `https://www.nintendo.de/Suche/Suche-299117.html?q=${encodedGameName}`;
+        const q = encodeURIComponent(gameName);
+        return `https://www.nintendo.de/Suche/Suche-299117.html?q=${q}`;
     }
-
     if (urlString.includes('store.steampowered.com')) {
         try {
-            const url = new URL(urlString);
-            url.searchParams.set('l', 'german');
-            return url.toString();
-        } catch (e) {
+            const u = new URL(urlString);
+            u.searchParams.set('l', 'german');
+            return u.toString();
+        } catch {
             return urlString;
         }
     }
-
     const localePattern = /\/en-[a-zA-Z]{2}\//;
-    if (localePattern.test(urlString)) {
-        return urlString.replace(localePattern, '/de-de/');
-    }
-
-    return urlString;
+    return urlString.replace(localePattern, '/de-de/') || urlString;
 }
 
 function getStoreLink(game) {
-    const { websites, name } = game;
+    const { websites = [], name } = game;
     const activeFilters = appState.platformFilters;
-    
-    if (!Array.isArray(websites) || !websites.length) return null;
 
-    const findByDomain = (domain) => websites.find(site => site.url.includes(domain));
-    const findByCategory = (catId) => websites.find(site => site.category === catId);
-    
-    if (activeFilters instanceof Set && activeFilters.size > 0) {
-        for (const platformId of activeFilters) {
-            const rule = platformStoreRules.get(platformId);
+    if (!websites.length) return null;
+
+    const findByDomain   = d => websites.find(w => w.url.includes(d));
+    const findByCategory = c => websites.find(w => w.category === c);
+
+    // Filter nach aktiver Plattform
+    if (activeFilters.size) {
+        for (const pf of activeFilters) {
+            const rule = platformStoreRules.get(pf);
             if (!rule) continue;
+
             if (rule.type === 'domain') {
-                for (const domain of rule.domains) {
-                    const site = findByDomain(domain);
+                for (const d of rule.domains) {
+                    const site = findByDomain(d);
                     if (site) return localizeUrl(site.url, name);
                 }
             } else if (rule.type === 'category') {
-                for (const categoryId of rule.ids) {
-                    const site = findByCategory(categoryId);
+                for (const cid of rule.ids) {
+                    const site = findByCategory(cid);
                     if (site) return localizeUrl(site.url, name);
                 }
             }
         }
     }
 
-    let bestLink = null;
-    let bestPriority = Infinity;
-    for (const site of websites) {
-        const prio = storePriority.get(site.category);
+    // Fallback: nach Priorität
+    let bestLink    = null;
+    let bestPriority= Infinity;
+    for (const w of websites) {
+        const prio = storePriority.get(w.category);
         if (typeof prio === 'number' && prio < bestPriority) {
-            bestPriority = prio;
-            bestLink = site.url;
+            bestPriority  = prio;
+            bestLink      = w.url;
         }
     }
-
     return localizeUrl(bestLink, name);
 }
 
@@ -408,10 +426,12 @@ function getStoreLink(game) {
 function loadGoogleAnalytics() {
     const MID = 'G-9MTCLGZVDD';
     if (window.gtag) return;
+
     const s1 = document.createElement('script');
     s1.async = true;
-    s1.src = `https://www.googletagmanager.com/gtag/js?id=${MID}`;
+    s1.src   = `https://www.googletagmanager.com/gtag/js?id=${MID}`;
     document.head.appendChild(s1);
+
     const s2 = document.createElement('script');
     s2.innerHTML = `
         window.dataLayer = window.dataLayer || [];
@@ -425,7 +445,7 @@ function loadGoogleAnalytics() {
 window.addEventListener('load', () => {
     window.cookieconsent.initialise({
         palette: {
-            popup: { background: '#2a2a2a', text: '#f0f0f0' },
+            popup:  { background: '#2a2a2a', text: '#f0f0f0' },
             button: { background: '#9146ff' }
         },
         theme: 'classic',
@@ -434,10 +454,10 @@ window.addEventListener('load', () => {
         revokable: false,
         content: {
             message: "Wir würden gerne Cookies für Analyse-Zwecke verwenden.",
-            allow: 'Akzeptieren',
-            deny: 'Ablehnen',
-            link: 'Mehr erfahren',
-            href: '/datenschutz.html'
+            allow:   'Akzeptieren',
+            deny:    'Ablehnen',
+            link:    'Mehr erfahren',
+            href:    '/datenschutz.html'
         },
         onStatusChange() {
             if (this.hasConsented()) loadGoogleAnalytics();
