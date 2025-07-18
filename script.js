@@ -119,29 +119,22 @@ function fetchAndDisplayGames() {
 // ===================================
 function fetchGamesFromAPI(offset, query = '', platformIds = new Set(), isTodayFilter) {
     const conditions = [];
-    const sort       = 'sort first_release_date asc;';
+    const sort = isTodayFilter ? 'sort first_release_date asc;' : 'sort first_release_date asc;';
 
-    // Datum ab Mitternacht heute oder nur heute
     let dateCondition;
 
-    // KORREKTUR 1: Die Logik für den "Heute"-Filter wurde angepasst,
-    // um die lokale Zeitzone des Benutzers korrekt zu berücksichtigen.
     if (isTodayFilter) {
         const now = new Date();
-        // Start des heutigen Tages in der lokalen Zeitzone des Benutzers
         const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-        // Ende des heutigen Tages in der lokalen Zeitzone des Benutzers
         const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-
-        // Konvertiere die lokalen Zeitpunkte in UTC-Timestamps für die API-Abfrage
         const startTimestamp = Math.floor(startOfDay.getTime() / 1000);
         const endTimestamp = Math.floor(endOfDay.getTime() / 1000);
-
         dateCondition = `(first_release_date >= ${startTimestamp} & first_release_date <= ${endTimestamp})`;
     } else {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        dateCondition = `(first_release_date >= ${Math.floor(today.getTime()/1000)})`;
+        const now = new Date();
+        const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        const endOfTodayTimestamp = Math.floor(endOfToday.getTime() / 1000);
+        dateCondition = `(first_release_date > ${endOfTodayTimestamp})`;
     }
     conditions.push(dateCondition);
 
