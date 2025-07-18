@@ -124,32 +124,35 @@ function fetchGamesFromAPI(offset, query = '', platformIds = new Set(), isTodayF
     const sort = 'sort first_release_date asc;';
     const hasPlatformFilter = platformIds.size > 0;
 
+    // =================================================================
+    // ÜBERARBEITET FÜR BESSERE PERFORMANCE
+    // Wir filtern jetzt immer auf dem schnelleren `first_release_date`
+    // und `platforms`-Feld, um Timeouts zu vermeiden.
+    // =================================================================
     let dateCondition;
-    const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-    const startOfTodayTs = Math.floor(startOfToday.getTime() / 1000);
-
     if (isTodayFilter) {
-        const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-        const endOfTodayTs = Math.floor(endOfToday.getTime() / 1000);
-        dateCondition = `(first_release_date >= ${startOfTodayTs} & first_release_date <= ${endOfTodayTs})`;
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+        const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+        const startTs = Math.floor(startOfDay.getTime() / 1000);
+        const endTs = Math.floor(endOfDay.getTime() / 1000);
+        dateCondition = `(first_release_date >= ${startTs} & first_release_date <= ${endTs})`;
     } else {
-    const startOfTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
-    const startOfTomorrowTs = Math.floor(startOfTomorrow.getTime() / 1000);
-    // Diese Abfrage stellt sicher, dass das Feld "release_dates" existiert
-    // und filtert dann nach Spielen, die ein Release in Europa (oder weltweit)
-    // ab morgen haben.
-    dateCondition = `release_dates != null & release_dates.date > ${startOfTomorrowTs} & (release_dates.region = ${REGION_EUROPE} | release_dates.region = 8)`; // [!code focus]
-}
+        const nowUnix = Math.floor(Date.now() / 1000);
+        dateCondition = `(first_release_date > ${nowUnix})`;
+    }
     conditions.push(dateCondition);
-    
+
     if (query) {
         conditions.push(`(name ~ *"${query}"*)`);
     }
     if (hasPlatformFilter) {
         conditions.push(`(platforms = (${[...platformIds].join(',')}))`);
     }
-    
+    // =================================================================
+    // ENDE DER ÄNDERUNG
+    // =================================================================
+
     const whereClause = conditions.join(' & ');
     
     const body = `
@@ -266,13 +269,11 @@ function displayGames(games, isTodayFilter = false) {
         if (isTodayFilter) {
             countdownTimerEl.innerHTML = '🎉 Veröffentlicht!';
         } else if (relDate && relDate > new Date()) {
-            // =================================================================
-            // KORREKTUR FÜR DIE COUNTDOWN-BERECHNUNG
-            // Stellt sicher, dass der Countdown auf Mitternacht LOKALER Zeit zielt.
-            // =================================================================
-            const targetDate = new Date(relDate.getFullYear(), relDate.getMonth(), relDate.getDate(), 0, 0, 0);
-            const targetTimestamp = targetDate.getTime() / 1000;
-            countdownElements.push({ elementId: `timer-${game.id}`, timestamp: targetTimestamp });
+            const dateString = relDate.toISOString().slice(0, 10);
+            const localMidnight = new Date(dateString + "T00:00:00");
+            const localTimestamp = localMidnight.getTime() / 1000;
+            
+            countdownElements.push({ elementId: `timer-${game.id}`, timestamp: localTimestamp });
         } else {
              if (countdownTimerEl) countdownTimerEl.style.display = 'none';
         }
