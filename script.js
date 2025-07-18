@@ -241,11 +241,16 @@ function displayGames(games, isTodayFilter = false) {
         const bestTs  = getBestReleaseTimestamp(game.release_dates, game.first_release_date);
         const relDate = bestTs ? new Date(bestTs * 1000) : null;
         let dateStr   = 'Datum unbekannt';
+        
         if (relDate) {
-            const opts = { day: '2-digit', month: '2-digit', year: 'numeric' };
-            dateStr = isTodayFilter
-                ? 'Heute erschienen!'
-                : `Erscheint am: ${relDate.toLocaleDateString('de-DE', opts)}`;
+            if (isTodayFilter) {
+                dateStr = 'Release Heute!';
+            } else {
+                const opts = { day: '2-digit', month: '2-digit', year: 'numeric' };
+                const formattedDate = relDate.toLocaleDateString('de-DE', opts);
+                const prefix = (bestTs * 1000 <= Date.now()) ? 'Veröffentlicht am:' : 'Erscheint am:';
+                dateStr = `${prefix} ${formattedDate}`;
+            }
         }
 
         const storeLink   = getStoreLink(game);
@@ -270,19 +275,12 @@ function displayGames(games, isTodayFilter = false) {
         fragment.appendChild(card);
 
         const timerEl = card.querySelector('.countdown-timer');
-        if (isTodayFilter) {
+        
+        if (isTodayFilter || (bestTs && bestTs * 1000 <= Date.now())) {
             timerEl.textContent = '🎉 Veröffentlicht!';
-        }
-        // KORREKTUR 2: Die Countdown-Logik verwendet nun direkt den UTC-Timestamp,
-        // um einen zeitzonenunabhängigen und konsistenten Countdown zu gewährleisten.
-        else if (bestTs && bestTs * 1000 > Date.now()) {
-            // Der `bestTs` ist bereits der korrekte UTC-Timestamp in Sekunden.
-            // Wir verwenden ihn direkt für den Countdown.
+        } else if (bestTs) {
             countdownElements.push({ elementId: `timer-${game.id}`, timestamp: bestTs });
-        } else if (bestTs) { // Wenn bereits veröffentlicht
-            timerEl.textContent = '🎉 Veröffentlicht!';
-        }
-        else {
+        } else {
             timerEl.style.display = 'none';
         }
     });
