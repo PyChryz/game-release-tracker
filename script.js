@@ -123,11 +123,21 @@ function fetchGamesFromAPI(offset, query = '', platformIds = new Set(), isTodayF
 
     // Datum ab Mitternacht heute oder nur heute
     let dateCondition;
+
+    // KORREKTUR 1: Die Logik für den "Heute"-Filter wurde angepasst,
+    // um die lokale Zeitzone des Benutzers korrekt zu berücksichtigen.
     if (isTodayFilter) {
-        const now        = new Date();
-        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-        const endOfDay   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-        dateCondition    = `(first_release_date >= ${Math.floor(startOfDay/1000)} & first_release_date <= ${Math.floor(endOfDay/1000)})`;
+        const now = new Date();
+        // Start des heutigen Tages in der lokalen Zeitzone des Benutzers
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+        // Ende des heutigen Tages in der lokalen Zeitzone des Benutzers
+        const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+        // Konvertiere die lokalen Zeitpunkte in UTC-Timestamps für die API-Abfrage
+        const startTimestamp = Math.floor(startOfDay.getTime() / 1000);
+        const endTimestamp = Math.floor(endOfDay.getTime() / 1000);
+
+        dateCondition = `(first_release_date >= ${startTimestamp} & first_release_date <= ${endTimestamp})`;
     } else {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -269,12 +279,17 @@ function displayGames(games, isTodayFilter = false) {
         const timerEl = card.querySelector('.countdown-timer');
         if (isTodayFilter) {
             timerEl.textContent = '🎉 Veröffentlicht!';
-        } else if (relDate) {
-            // Countdown bis lokale Mitternacht des Release-Datums
-            const target = new Date(relDate.getFullYear(), relDate.getMonth(), relDate.getDate());
-            const ts     = Math.floor(target.getTime() / 1000);
-            countdownElements.push({ elementId: `timer-${game.id}`, timestamp: ts });
-        } else {
+        }
+        // KORREKTUR 2: Die Countdown-Logik verwendet nun direkt den UTC-Timestamp,
+        // um einen zeitzonenunabhängigen und konsistenten Countdown zu gewährleisten.
+        else if (bestTs && bestTs * 1000 > Date.now()) {
+            // Der `bestTs` ist bereits der korrekte UTC-Timestamp in Sekunden.
+            // Wir verwenden ihn direkt für den Countdown.
+            countdownElements.push({ elementId: `timer-${game.id}`, timestamp: bestTs });
+        } else if (bestTs) { // Wenn bereits veröffentlicht
+            timerEl.textContent = '🎉 Veröffentlicht!';
+        }
+        else {
             timerEl.style.display = 'none';
         }
     });
