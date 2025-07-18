@@ -5,7 +5,6 @@ const gamesPerLoad = 20;
 const countdownElements = [];
 let countdownIntervalId = null;
 
-// Zentrales State-Objekt
 const appState = {
     offset: 0,
     searchQuery: '',
@@ -13,7 +12,6 @@ const appState = {
     isTodayFilterActive: false
 };
 
-// Konstanten für die API
 const REGION_EUROPE   = 2;
 const STORE_STEAM     = 13;
 const STORE_EPIC      = 16;
@@ -61,18 +59,18 @@ function debounce(fn, delay) {
 
 
 // ===================================
-// HAUPTLOGIK & EVENT LISTENERS
+// HAUPTLOGIK & EVENTS
 // ===================================
 document.addEventListener('DOMContentLoaded', () => {
-    const loadMoreButton         = document.getElementById('load-more-btn');
-    const searchInput            = document.getElementById('search-input');
-    const mainTitle              = document.getElementById('main-title');
-    const searchForm             = document.getElementById('search-form');
-    const toggleButton           = document.getElementById('theme-toggle');
-    const platformFilterContainer= document.getElementById('platform-filter');
-    const todayFilterBtn         = document.getElementById('today-filter-btn');
+    const loadMoreBtn          = document.getElementById('load-more-btn');
+    const searchInput          = document.getElementById('search-input');
+    const searchForm           = document.getElementById('search-form');
+    const mainTitle            = document.getElementById('main-title');
+    const themeToggle          = document.getElementById('theme-toggle');
+    const platformFilter       = document.getElementById('platform-filter');
+    const todayFilterBtn       = document.getElementById('today-filter-btn');
 
-    toggleButton?.addEventListener('click', () => {
+    themeToggle?.addEventListener('click', () => {
         document.body.classList.toggle('light-mode');
     });
 
@@ -93,21 +91,20 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchAndDisplayGames();
     }, 400));
 
-    loadMoreButton.addEventListener('click', () => {
+    loadMoreBtn.addEventListener('click', () => {
         appState.offset += gamesPerLoad;
         fetchAndDisplayGames();
     });
 
-    platformFilterContainer?.addEventListener('change', () => {
+    platformFilter?.addEventListener('change', () => {
         appState.platformFilters.clear();
-        platformFilterContainer
+        platformFilter
             .querySelectorAll('input[type=checkbox]:checked')
             .forEach(cb => appState.platformFilters.add(parseInt(cb.value, 10)));
         appState.offset = 0;
         fetchAndDisplayGames();
     });
 
-    // Initialer Aufruf
     fetchAndDisplayGames();
 });
 
@@ -121,42 +118,32 @@ function fetchAndDisplayGames() {
 // API-FUNKTIONEN
 // ===================================
 function fetchGamesFromAPI(offset, query = '', platformIds = new Set(), isTodayFilter) {
-    const conditions       = [];
-    const sort             = 'sort first_release_date asc;';
-    const hasPlatformFilter= platformIds.size > 0;
+    const conditions = [];
+    const sort       = 'sort first_release_date asc;';
 
-    // === Datumskondition ===
+    // Datum ab Mitternacht heute oder nur heute
     let dateCondition;
     if (isTodayFilter) {
-        // Heutige Releases
-        const now         = new Date();
-        const startOfDay  = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-        const endOfDay    = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-        const startTs     = Math.floor(startOfDay.getTime() / 1000);
-        const endTs       = Math.floor(endOfDay.getTime() / 1000);
-        dateCondition     = `(first_release_date >= ${startTs} & first_release_date <= ${endTs})`;
+        const now        = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+        const endOfDay   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+        dateCondition    = `(first_release_date >= ${Math.floor(startOfDay/1000)} & first_release_date <= ${Math.floor(endOfDay/1000)})`;
     } else {
-        // Kommende Releases ab Mitternacht HEUTE
-        const today        = new Date();
+        const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const startOfTodayTs = Math.floor(today.getTime() / 1000);
-        dateCondition     = `(first_release_date >= ${startOfTodayTs})`;
+        dateCondition = `(first_release_date >= ${Math.floor(today.getTime()/1000)})`;
     }
     conditions.push(dateCondition);
 
-    // === Suche ===
     if (query) {
         conditions.push(`(name ~ *"${query}"*)`);
     }
 
-    // === Plattform-Filter ===
-    if (hasPlatformFilter) {
+    if (platformIds.size) {
         conditions.push(`(platforms = (${[...platformIds].join(',')}))`);
     }
 
     const whereClause = conditions.join(' & ');
-
-    // Felder: ID hinzugefügt, damit Timer-Elemente eindeutig sind
     const body = `
         fields
             id,
@@ -198,12 +185,12 @@ function executeFetch(body, query = '', isTodayFilter = false) {
     .then(games => {
         loader.style.display = 'none';
 
-        if (games.length === 0 && appState.offset === 0) {
+        if (!games.length && appState.offset === 0) {
             let msg = 'Keine Spiele für die aktuelle Auswahl gefunden.';
             if (isTodayFilter) {
                 msg = query
                     ? `Keine heute erschienenen Spiele für "${query}" gefunden.`
-                    : 'Heute sind anscheinend keine Spiele für die gewählten Plattformen erschienen.';
+                    : 'Heute sind keine Releases verfügbar.';
             } else if (query) {
                 msg = `Keine kommenden Spiele für „${query}“ gefunden.`;
             }
@@ -212,7 +199,7 @@ function executeFetch(body, query = '', isTodayFilter = false) {
         }
 
         displayGames(games, isTodayFilter);
-        loadMoreBtn.style.display = (games.length < gamesPerLoad) ? 'none' : 'inline-block';
+        loadMoreBtn.style.display = games.length < gamesPerLoad ? 'none' : 'inline-block';
     })
     .catch(err => {
         console.error('API-Fehler:', err);
@@ -230,17 +217,15 @@ function displayGames(games, isTodayFilter = false) {
 
     if (appState.offset === 0) {
         countdownElements.length = 0;
-        if (countdownIntervalId) {
-            clearInterval(countdownIntervalId);
-            countdownIntervalId = null;
-        }
+        clearInterval(countdownIntervalId);
+        countdownIntervalId = null;
     }
 
     const fragment = document.createDocumentFragment();
 
     games.forEach(game => {
-        const placeholderSVG = 'data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" width="280" height="200"%3e%3crect fill="%232a2a2a" width="100%" height="100%"/%3e%3ctext fill="%23666" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="16"%3eKein Cover%3c/text%3e%3c/svg%3e';
-        const coverUrl     = game.cover
+        const placeholderSVG = 'data:image/svg+xml;charset=UTF-8,...';
+        const coverUrl       = game.cover
             ? game.cover.url.replace('t_thumb', 't_cover_big')
             : placeholderSVG;
 
@@ -250,9 +235,9 @@ function displayGames(games, isTodayFilter = false) {
         });
         const platformIcons = [...icons].join(' ');
 
-        const bestTs = getBestReleaseTimestamp(game.release_dates, game.first_release_date);
+        const bestTs  = getBestReleaseTimestamp(game.release_dates, game.first_release_date);
         const relDate = bestTs ? new Date(bestTs * 1000) : null;
-        let dateStr = 'Datum unbekannt';
+        let dateStr   = 'Datum unbekannt';
         if (relDate) {
             const opts = { day: '2-digit', month: '2-digit', year: 'numeric' };
             dateStr = isTodayFilter
@@ -260,17 +245,15 @@ function displayGames(games, isTodayFilter = false) {
                 : `Erscheint am: ${relDate.toLocaleDateString('de-DE', opts)}`;
         }
 
-        const storeLink  = getStoreLink(game);
-        const wrapperTag = storeLink ? 'a' : 'div';
-        const wrapperAttrs = storeLink
-            ? `href="${storeLink}" target="_blank" rel="noopener noreferrer"`
-            : '';
+        const storeLink   = getStoreLink(game);
+        const wrapperTag  = storeLink ? 'a' : 'div';
+        const wrapperAttr = storeLink ? `href="${storeLink}" target="_blank" rel="noopener noreferrer"` : '';
 
         const card = document.createElement('div');
         card.classList.add('game-card');
         card.innerHTML = `
-            <${wrapperTag} class="game-image-container" style="background-image:url(${coverUrl})" ${wrapperAttrs}>
-                <img src="${coverUrl}" alt="Cover von ${game.name}" class="game-image" loading="lazy" />
+            <${wrapperTag} class="game-image-container" style="background-image:url(${coverUrl})" ${wrapperAttr}>
+                <img src="${coverUrl}" alt="Cover von ${game.name}" class="game-image" loading="lazy">
             </${wrapperTag}>
             <div class="card-content">
                 <div class="card-header">
@@ -285,15 +268,12 @@ function displayGames(games, isTodayFilter = false) {
 
         const timerEl = card.querySelector('.countdown-timer');
         if (isTodayFilter) {
-            timerEl.innerHTML = '🎉 Veröffentlicht!';
-        } else if (relDate && relDate > new Date()) {
+            timerEl.textContent = '🎉 Veröffentlicht!';
+        } else if (relDate) {
             // Countdown bis lokale Mitternacht des Release-Datums
-            const midnight = new Date(relDate.getFullYear(), relDate.getMonth(), relDate.getDate());
-            const tsMidnight = Math.floor(midnight.getTime() / 1000);
-            countdownElements.push({
-                elementId: `timer-${game.id}`,
-                timestamp: tsMidnight
-            });
+            const target = new Date(relDate.getFullYear(), relDate.getMonth(), relDate.getDate());
+            const ts     = Math.floor(target.getTime() / 1000);
+            countdownElements.push({ elementId: `timer-${game.id}`, timestamp: ts });
         } else {
             timerEl.style.display = 'none';
         }
@@ -311,28 +291,23 @@ function updateCountdowns() {
     for (let i = countdownElements.length - 1; i >= 0; i--) {
         const { elementId, timestamp } = countdownElements[i];
         const el = document.getElementById(elementId);
-
         if (!el) {
             countdownElements.splice(i, 1);
             continue;
         }
-
-        const diff = (timestamp * 1000) - now;
+        const diff = timestamp * 1000 - now;
         if (diff <= 0) {
-            el.innerHTML = '🎉 Veröffentlicht!';
+            el.textContent = '🎉 Veröffentlicht!';
             countdownElements.splice(i, 1);
             continue;
         }
-
         const days    = Math.floor(diff / 86400000);
         const hours   = Math.floor((diff % 86400000) / 3600000);
         const minutes = Math.floor((diff % 3600000) / 60000);
         const seconds = Math.floor((diff % 60000) / 1000);
-
-        el.innerHTML = `${days}T ${hours}h ${minutes}m ${seconds}s`;
+        el.textContent = `${days}T ${hours}h ${minutes}m ${seconds}s`;
     }
-
-    if (!countdownElements.length && countdownIntervalId) {
+    if (!countdownElements.length) {
         clearInterval(countdownIntervalId);
         countdownIntervalId = null;
     }
@@ -354,12 +329,11 @@ function resetToUpcomingView() {
 function getBestReleaseTimestamp(releaseDates, fallback) {
     if (!Array.isArray(releaseDates) || !releaseDates.length) return fallback;
     const eu = releaseDates.find(d => d.region === REGION_EUROPE);
-    return eu?.date || releaseDates[0]?.date || fallback;
+    return eu?.date || releaseDates[0].date || fallback;
 }
 
 function localizeUrl(urlString, gameName) {
     if (!urlString) return null;
-
     if (urlString.includes('nintendo.com')) {
         const q = encodeURIComponent(gameName);
         return `https://www.nintendo.de/Suche/Suche-299117.html?q=${q}`;
@@ -373,8 +347,7 @@ function localizeUrl(urlString, gameName) {
             return urlString;
         }
     }
-    const localePattern = /\/en-[a-zA-Z]{2}\//;
-    return urlString.replace(localePattern, '/de-de/') || urlString;
+    return urlString.replace(/\/en-[a-zA-Z]{2}\//, '/de-de/') || urlString;
 }
 
 function getStoreLink(game) {
@@ -386,18 +359,16 @@ function getStoreLink(game) {
     const findByDomain   = d => websites.find(w => w.url.includes(d));
     const findByCategory = c => websites.find(w => w.category === c);
 
-    // Filter nach aktiver Plattform
     if (activeFilters.size) {
         for (const pf of activeFilters) {
             const rule = platformStoreRules.get(pf);
             if (!rule) continue;
-
             if (rule.type === 'domain') {
-                for (const d of rule.domains) {
-                    const site = findByDomain(d);
+                for (const dom of rule.domains) {
+                    const site = findByDomain(dom);
                     if (site) return localizeUrl(site.url, name);
                 }
-            } else if (rule.type === 'category') {
+            } else {
                 for (const cid of rule.ids) {
                     const site = findByCategory(cid);
                     if (site) return localizeUrl(site.url, name);
@@ -406,14 +377,13 @@ function getStoreLink(game) {
         }
     }
 
-    // Fallback: nach Priorität
-    let bestLink    = null;
-    let bestPriority= Infinity;
+    let bestLink     = null;
+    let bestPriority = Infinity;
     for (const w of websites) {
         const prio = storePriority.get(w.category);
         if (typeof prio === 'number' && prio < bestPriority) {
-            bestPriority  = prio;
-            bestLink      = w.url;
+            bestPriority = prio;
+            bestLink     = w.url;
         }
     }
     return localizeUrl(bestLink, name);
@@ -421,12 +391,11 @@ function getStoreLink(game) {
 
 
 // ===================================
-// EXTERNE DIENSTE
+// EXTERNE DIENSTE (Analytics & Cookie Consent)
 // ===================================
 function loadGoogleAnalytics() {
     const MID = 'G-9MTCLGZVDD';
     if (window.gtag) return;
-
     const s1 = document.createElement('script');
     s1.async = true;
     s1.src   = `https://www.googletagmanager.com/gtag/js?id=${MID}`;
