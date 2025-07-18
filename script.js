@@ -136,8 +136,10 @@ function fetchGamesFromAPI(offset, query = '', platformIds = new Set(), isTodayF
     } else {
     const startOfTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
     const startOfTomorrowTs = Math.floor(startOfTomorrow.getTime() / 1000);
-    // Wir fragen die API direkt nach Spielen mit einem europäischen Release-Datum ab morgen.
-    dateCondition = `(release_dates.region = ${REGION_EUROPE} & release_dates.date >= ${startOfTomorrowTs})`; // [!code focus]
+    // Diese Abfrage stellt sicher, dass das Feld "release_dates" existiert
+    // und filtert dann nach Spielen, die ein Release in Europa (oder weltweit)
+    // ab morgen haben.
+    dateCondition = `release_dates != null & release_dates.date > ${startOfTomorrowTs} & (release_dates.region = ${REGION_EUROPE} | release_dates.region = 8)`; // [!code focus]
 }
     conditions.push(dateCondition);
     
